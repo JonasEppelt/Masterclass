@@ -66,10 +66,10 @@ class BlitManager: #manages the blitting for tracker and ecal widget
         cv.flush_events()
 
 class TrackingWidget:
-    def __init__(self, data_path, B = 0.2, layers = 15, n_segments = 5, ecl_segments = 30, k = 3, dist = 0.1, noise = 0.05, linewidth = 5, show_truthbutton = False, continuous_update=True, truthvalues=False, ignore_noise=False, trackercolor="gray"):
+    def __init__(self, data_path, B = 0.2, layers = 15, n_segments = 8, ecl_segments = 30, k = 3, dist = 0.1, noise = 0.05, linewidth = 5, show_truthbutton = False, continuous_update=True, truthvalues=False, ignore_noise=False, trackercolor="gray"):
         self.continuous_update=continuous_update
         self.truthvalues=truthvalues
-        self.granularity=100      #must be multiple of 4
+        self.granularity=100      #must be multiple of 4 otherwise everyone is gonna die
         self.show_truthbutton = show_truthbutton
         self.particles_df = pd.read_hdf(data_path)
         self.particles_df.loc[:,'charge'] = self.particles_df.loc[:,'pdg']/abs(self.particles_df.loc[:,'pdg'])
@@ -113,17 +113,21 @@ class TrackingWidget:
             self.select_particles[self.index].phi = self.phi[self.index].value+self.phi_fine[self.index].value
             self.select_particles[self.index].charge = -1 if self.charge[self.index].value == "negative Ladung" else 1
             self.select_particles[self.index].radius = (self.r[self.index].value+self.r_fine[self.index].value)/self.B
-            self.r_label[self.index].value = str(round(self.select_particles[self.index].radius*self.B,6))
-            self.phi_label[self.index].value = str(round(self.select_particles[self.index].phi,6))
 
             drawtrace = True
-            if self.show_truthbutton:
+            if self.show_truthbutton:      
                 if self.truthbutton.value:
                     trace=self.truth_particles[self.index].trace_array()
+                    self.r_label[self.index].value = str(round(self.truth_particles[self.index].radius*self.B,6))+"(wahrer Wert)"
+                    self.phi_label[self.index].value = str(round(self.truth_particles[self.index].phi,6))+"(wahrer Wert)"
                 else:
                     trace=self.select_particles[self.index].trace_array()
+                    self.r_label[self.index].value = str(round(self.select_particles[self.index].radius*self.B,6))
+                    self.phi_label[self.index].value = str(round(self.select_particles[self.index].phi,6))
             else:
                 trace=self.select_particles[self.index].trace_array()
+                self.r_label[self.index].value = str(round(self.select_particles[self.index].radius*self.B,6))
+                self.phi_label[self.index].value = str(round(self.select_particles[self.index].phi,6))
 
             hits,misses=self.tracker.get_hits_and_misses(self.select_particles[self.index],self.index)
             self.hit_n_misses[self.index].value = str(hits) + " hits & " + str(misses) + " misses"
@@ -167,6 +171,8 @@ class TrackingWidget:
         if self.show_truthbutton:
             self.truthbutton = widgets.ToggleButton(value = False, description = "Zeige wahres Teilchen")
             self.truthbutton.observe(self.update, names = "value")
+        #else:
+            #self.truthbutton.value=False
         for i in range(self.n_particles):
             self.hit_n_misses.append(widgets.Text(description = "", value = "0 hits & 0 misses", disabled=True))
             self.r_label.append(widgets.Text(description = "$p_T$:", value = "0", disabled=True))
@@ -228,7 +234,7 @@ class TrackingWidget:
 
 
 class TestDetektor:
-    def __init__(self, B=0.1, layers=8, n_segments=1,ecl_segments=10, k=2):
+    def __init__(self, B=0.1, layers=8, n_segments=3,ecl_segments=10, k=2):
         if layers > 20:
             print("Es sind maximal 20 Schichten möglich!")
             layers = 20
