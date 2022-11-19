@@ -95,21 +95,21 @@ class TrackingWidget:
             arrow_y = np.sin(arrow_phi)*(self.tracker.layers+2.8)
             self.arrows.append(get_arrow(posx=arrow_x,posy=arrow_y,phi = arrow_phi + np.pi/2,size=0.18,granularity=self.granularity))
 
-            # build dummy particles used for selection
+            # build select particles used for simulation
             p = Particle(0.00001, 0, self.B, np.random.randint(0,1)*2-1)
             self.select_particles.append(p)
 
-        self.tracker.make_tracker_mask(self.truth_particles)    
+        self.tracker.make_tracker_mask(self.truth_particles) #color the hits of the true particles red 
             
     def change_particle(self,change):
         self.index = self.tabs.selected_index
         self.update(1)
 
-    def update(self,change):
+    def update(self,change): #update function for drawing
 
-        if self.index is None:
+        if self.index is None: #if no particle is selected, no particle is drawn
             drawtrace = False  
-        else:   #alles mit self.index kann nur abgefragt werden, wenn self.index nicht nonetype ist  
+        else:  
             self.select_particles[self.index].phi = self.phi[self.index].value+self.phi_fine[self.index].value
             self.select_particles[self.index].charge = -1 if self.charge[self.index].value == "negative Ladung" else 1
             self.select_particles[self.index].radius = (self.r[self.index].value+self.r_fine[self.index].value)/self.B
@@ -132,11 +132,12 @@ class TrackingWidget:
             hits,misses=self.tracker.get_hits_and_misses(self.select_particles[self.index],self.index)
             self.hit_n_misses[self.index].value = str(hits) + " hits & " + str(misses) + " misses"
         
-        segments,colors=self.tracker.get_hit_lines(self.select_particles,self.index)
-        if drawtrace == True:
+        segments,colors=self.tracker.get_hit_lines(self.select_particles,self.index) #segments and colors of segments hit by the simulated particles 
+        if drawtrace == True: #add the particle trace and an arrow to the things to be drawn
             segments=np.append(segments,[trace.T],axis=0)
             segments=np.append(segments,[self.arrows[self.index]],axis=0)
             colors=np.append(colors,["blue","green"])
+        #to make drawing faster, the trackersegments, the trace and the arrow are all drawn by the same LineCollection artist
 
         self.artist.set_segments(segments)
         self.artist.set_color(colors)
@@ -156,7 +157,7 @@ class TrackingWidget:
         self.artist=artist
         self.artist.set_animated(True)
         self.fig.canvas.toolbar_position = 'left'
-        self.ax.add_collection(self.tracker.get_tracker_collection())
+        self.ax.add_collection(self.tracker.get_tracker_collection()) #draw tracker (gray and red segments)
         self.bm = BlitManager(self.fig.canvas , self.artist)
 
         self.hit_n_misses = []
@@ -168,11 +169,9 @@ class TrackingWidget:
         self.phi_fine = []
         self.charge = []
         self.box_list = []
-        if self.show_truthbutton:
+        if self.show_truthbutton: #make all sliders and buttons
             self.truthbutton = widgets.ToggleButton(value = False, description = "Zeige wahres Teilchen")
             self.truthbutton.observe(self.update, names = "value")
-        #else:
-            #self.truthbutton.value=False
         for i in range(self.n_particles):
             self.hit_n_misses.append(widgets.Text(description = "", value = "0 hits & 0 misses", disabled=True))
             self.r_label.append(widgets.Text(description = "$p_T$:", value = "0", disabled=True))
@@ -295,9 +294,10 @@ class ECLWidget:
         hits = hits.reset_index(drop=True)
         self.edge_size = 5
         self.ecal = ECal(144,46,hits, crystal_edge = self.edge_size, noise_rate = noise_rate)   
-        content = deepcopy(self.ecal.crystals_df["content"])
-        #content = np.log(content)
-        self.alphas = np.clip(content,0.25,1)
+        content = np.array(self.ecal.crystals_df["content"].to_numpy(),dtype=float)
+        content = 2*np.sqrt(abs(content))
+        self.alphas = np.clip(content,0.2,1)
+        
         
         self.out = widgets.Output()
         with self.out:
@@ -321,7 +321,7 @@ class ECLWidget:
         self.ecal.set_colors(self.particle_index)
         facecolors = to_rgba_array(self.ecal.crystals_df.loc[:,"facecolor"].to_numpy())
         content_mask = (self.ecal.crystals_df["content"]>0).to_numpy()
-        facecolors.T[-1] = 0.5 
+        facecolors.T[-1] = 0.5
         facecolors[content_mask,-1] = self.alphas[content_mask]
         edgecolors = to_rgba_array(self.ecal.crystals_df.loc[:,"edgecolor"].to_numpy())
         self.ecal.collection.set_edgecolors(edgecolors)
@@ -468,7 +468,6 @@ class MatchingWidget:
         self.tabs.observe(self.update, "selected_index")
         for i in range(len(self.res_df)):
             self.tabs.set_title(i,f"Teilchen {i}")
-            # self.mass_comp[i].value = str(
         self.update()
         display(self.tabs, self.out)
     

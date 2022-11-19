@@ -19,11 +19,16 @@ class ECal:
         self.select_particles = deepcopy(self.particles)
         self.select_particles.loc[:,:] = 0
         counter = 0
+
+        mask=np.full(len(self.particles.iloc[0].to_numpy()),False)
+        for i in range(self.n_particles):
+            mask=np.logical_or(mask,self.particles.iloc[i].to_numpy()<0.00001)       
+
         for c in range(ncols):
             for r in range(nrows):
                 content = 0
-                if np.random.rand() < noise_rate:
-                    content = np.random.normal(loc = 0.025, scale = 0.01)
+                if (np.random.rand() < noise_rate and mask[counter]==True):
+                    content = np.random.normal(loc = 0.01, scale = 0.005)
                 x = r*crystal_edge
                 y =  c*crystal_edge
                 edge = crystal_edge-linewidth/4
@@ -56,7 +61,7 @@ class ECal:
         self.crystals_df.loc[center,"edgecolor"] = "black"
         hit_mask = self.crystals_df["content"] > 0
         self.crystals_df.loc[hit_mask,"facecolor"] = "red"
-    
+
     def get_crystal(self, rectangle):
         x,y = rectangle.get_xy()
         for i,r in enumerate(self.crystals):

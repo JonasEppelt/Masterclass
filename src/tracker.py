@@ -70,7 +70,7 @@ class Tracker:
         self.lines = [] 
         self.segments.loc[:,"radius"] = self.segments.loc[:,"radius"].astype("float")
 
-    def make_tracker_mask(self,truth_particles):                                #this only has to be called once, makes the mask for all segemnts that have been hit by a true particle or noise. these will be the red segments
+    def make_tracker_mask(self,truth_particles=[]):                                #this only has to be called once, makes the mask for all segemnts that have been hit by a true particle or noise. these will be the red segments
         for i in range(len(truth_particles)):
             self.particle_masks.append(self.check_hit(truth_particles[i]))
             self.tracker_mask=np.logical_or(self.tracker_mask,self.particle_masks[i])
