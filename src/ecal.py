@@ -3,7 +3,6 @@ import pandas as pd
 from copy import deepcopy
 import numpy as np
 
-#test
 
 from matplotlib.colors import to_rgba_array
 from matplotlib.collections import PatchCollection
@@ -43,22 +42,25 @@ class ECal:
         self.collection.set_edgecolors(colors)
         
     
-    def set_colors(self, selected_index):
+    def set_colors(self, selected_index, allhidden=False,drawline=False):
         not_centers_mask = self.crystals_df.loc[:,"center"] == False
         centers_mask = self.crystals_df.loc[:,"center"] == True
         center = self.center[selected_index]
         self.crystals_df.loc[:,"facecolor"] = "gray"
         self.crystals_df.loc[:,"edgecolor"] = "gray"
 
-        selected_mask = self.select_particles.loc[selected_index,:].to_numpy()>0
-        self.crystals_df.loc[selected_mask, "edgecolor"] = "blue"
+        if allhidden == False:
+            selected_mask = self.select_particles.loc[selected_index,:].to_numpy()>0
+            self.crystals_df.loc[selected_mask, "edgecolor"] = "blue"
+
         hidden_mask = np.zeros(len(self.crystals_df))
         for i in range(self.n_particles):
-            if i != selected_index:
+            if i != selected_index or allhidden:
                 hidden_mask += self.select_particles.loc[i,:].to_numpy()
         hidden_mask = hidden_mask > 0
         self.crystals_df.loc[hidden_mask, "edgecolor"] = "lightyellow"
-        self.crystals_df.loc[center,"edgecolor"] = "black"
+        if drawline==False:
+            self.crystals_df.loc[center,"edgecolor"] = "black"
         hit_mask = self.crystals_df["content"] > 0
         self.crystals_df.loc[hit_mask,"facecolor"] = "red"
 

@@ -32,12 +32,17 @@ def get_arrow(posx,posy,phi,size=1,granularity=100): #returns (100,2) x,y array 
     return arrow
 
 class BlitManager: #manages the blitting for tracker and ecal widget
-    def __init__(self, canvas, artist):
+    def __init__(self, canvas, artist, artist2=None):
         """copy from matplotlib website (blitting)"""
         self.canvas = canvas
         self._bg = None
         self.artist = artist
-
+        if artist2 is not None:
+            self.artist2=artist2
+            self.twoartists=True
+        else:
+            self.twoartists=False
+        
         # grab the background on every draw
         self.cid = canvas.mpl_connect("draw_event", self.on_draw)
 
@@ -53,6 +58,8 @@ class BlitManager: #manages the blitting for tracker and ecal widget
     def _draw_animated(self):
         fig = self.canvas.figure
         fig.draw_artist(self.artist)
+        if self.twoartists:
+            fig.draw_artist(self.artist2)
 
     def update(self):
         cv = self.canvas
@@ -231,6 +238,22 @@ class TrackingWidget:
         df.loc[:, "pz"] = self.particles_df.loc[:,"pz"]
         return df
 
+    @property
+    def get_ecl_position(self):
+        theta=[]
+        r=0
+        for i in range(self.n_particles):
+            th=self.select_particles[i].charge*np.pi/2-self.select_particles[i].phi+np.arccos(r/(2*self.select_particles[i].radius))*self.select_particles[i].charge-np.pi/2
+            if th < 0:
+                th += 2*np.pi  
+            if th < 0:
+                th += 2*np.pi  
+            if th > np.pi:
+                th -= 2*np.pi  
+            if th > np.pi:
+                th -= 2*np.pi                
+            theta.append(th) 
+        return np.array(theta)*180/np.pi
 
 class TestDetektor:
     def __init__(self, B=0.1, layers=8, n_segments=3,ecl_segments=10, k=2):
@@ -284,8 +307,17 @@ class TestDetektor:
   
 class ECLWidget:
 
-    def __init__(self, data_path, noise_rate = 0.05, idx=None):
+    def __init__(self, data_path, noise_rate = 0.05, tw=None, idx=None):
         data = pd.read_hdf(data_path)
+        if tw is not None:
+            self.line_position=-tw.get_ecl_position*2+890
+            mask=self.line_position>720
+            self.line_position[mask]-=720
+            mask=self.line_position<0
+            self.line_position[mask]+=720
+            self.drawline=True
+        else:
+            self.drawline=False
         coords = [f'{i}' for i in np.arange(0, 6624)]
         if idx is None:
             hits = data[coords]
@@ -305,20 +337,25 @@ class ECLWidget:
         ax.set_ylim(-10,46*5+10)
         ax.set_xlim(-10,144*5+10)
         self.artist = ax.add_collection(self.ecal.collection)
+        self.lineartist=ax.add_collection(LineCollection([]))
         self.xys = np.array([self.ecal.crystals_df["x"] + self.edge_size/2,self.ecal.crystals_df["y"] + self.edge_size/2],dtype = "float64").T
         self.Npts = len(self.xys)
         self.lasso = LassoSelector(ax, onselect=self.onselect)
         self.artist.set_animated(True)
-        self.bm_ecal = BlitManager(fig.canvas , self.artist)
+        self.lineartist.set_animated(True)
+        self.bm_ecal = BlitManager(fig.canvas , self.artist, self.lineartist)
+        self.allhidden=False
         self.ind = []
+        self.vertices = [[(0,0)]]*len(hits)
         self.particle_index = 0
         
     def onselect(self, verts):
+        self.vertices[self.particle_index]=verts
         path = Path(verts)
         self.ind = np.nonzero(path.contains_points(self.xys))[0]
         self.ecal.select_particles.loc[self.particle_index, :] = 0
         self.ecal.select_particles.loc[self.particle_index, self.ind.astype(str)] = 1
-        self.ecal.set_colors(self.particle_index)
+        self.ecal.set_colors(self.particle_index,self.allhidden,self.drawline)
         facecolors = to_rgba_array(self.ecal.crystals_df.loc[:,"facecolor"].to_numpy())
         content_mask = (self.ecal.crystals_df["content"]>0).to_numpy()
         facecolors.T[-1] = 0.5
@@ -326,6 +363,9 @@ class ECLWidget:
         edgecolors = to_rgba_array(self.ecal.crystals_df.loc[:,"edgecolor"].to_numpy())
         self.ecal.collection.set_edgecolors(edgecolors)
         self.ecal.collection.set_facecolors(facecolors)
+        if self.drawline==True and self.allhidden==False:
+            self.lineartist.set_segments([np.array([np.ones(100)*self.line_position[self.particle_index],np.linspace(-5,46*5+5,100)]).T])
+            self.lineartist.set_color(["blue"])
         self.bm_ecal.update()
         particle_mask = self.ecal.select_particles.loc[self.particle_index, :].to_numpy()>0
         energy = self.ecal.crystals_df.loc[particle_mask, "content"].sum()
@@ -334,7 +374,10 @@ class ECLWidget:
     def change_particle(self,change):
         if self.particle.selected_index is not None:
             self.particle_index = self.particle.selected_index
-        self.onselect([(0,0)])
+            self.allhidden=False
+        else:
+            self.allhidden=True
+        self.onselect(self.vertices[self.particle_index])
         
     def show(self):
         self.particle = widgets.Accordion()
@@ -371,6 +414,10 @@ class ECLWidget:
             ydiff = abs(self.ecal.center[i]%144 - selected_hits%144)
             radius.append(max(xdiff.max(), ydiff.max()))
         return pd.DataFrame(radius, columns= ["Radius"])
+
+    @property
+    def get_particles_shape(self):
+        return self.vertices
 
 
 true_particle_data = [[0.511, 1],
@@ -470,7 +517,93 @@ class MatchingWidget:
             self.tabs.set_title(i,f"Teilchen {i}")
         self.update()
         display(self.tabs, self.out)
-    
+
+class MatchingWidget2:
+    def __init__(self, ew, tw, cheat_mode=True, cheating_threshhold = 1e-2) -> None:
+        self.energies = ew.get_particles_energy
+        self.radius = ew.get_particles_radius
+        self.momenta = tw.get_fitted_particles  
+        columns = ["Ladung", "Energie", "impuls", "Masse", "Radius"]
+        self.true_df = tw.particles_df
+        self.res_df = pd.DataFrame(data = np.zeros((len(self.energies), len(columns))), columns = columns)
+        #self.res_df.loc[:,"pt"] = np.sqrt(( self.momenta.loc[:,["px", "py"]]**2).sum())
+        if(cheat_mode):
+            self.momenta_cheat_mask = ((self.true_df["pt"]-self.momenta["pt"])<cheating_threshhold).to_numpy()
+            self.energies_cheat_mask = ((self.true_df["energy"]-self.energies["Energie"])<cheating_threshhold).to_numpy()
+            self.momenta.loc[self.momenta_cheat_mask, ["px", "py", "pz"]] =  self.true_df.loc[self.momenta_cheat_mask, ["px", "py", "pz"]]
+            self.energies.loc[self.energies_cheat_mask, "Energie"] = self.true_df.loc[self.energies_cheat_mask, "energy"] 
+
+            
+    def update(self, change = 0):
+        sele_index = self.tabs.selected_index
+        self.res_df.loc[sele_index, "Energie"] = self.energies.loc[sele_index, "Energie"]
+        self.res_df.loc[sele_index, "Radius"] = np.nan_to_num(self.radius.loc[sele_index, "Radius"])
+        self.res_df.loc[sele_index, "Ladung"] = self.momenta.loc[sele_index, "Ladung"]
+        self.res_df.loc[sele_index, "impuls"] = np.sqrt((self.momenta.loc[sele_index, ["px", "py", "pz"]]**2).sum().astype("float"))
+        # if self.res_df.loc[:, "Energie"] > self.res_df.loc[:, "impuls"]:
+        self.res_df.loc[:, "Masse"] = np.sqrt(abs(self.res_df.loc[:, "Energie"]**2 - self.res_df.loc[:, "impuls"]**2))
+        self.res_df.loc[:, "Masse"] = self.res_df.loc[:, "Masse"].fillna(0)
+        self.sel_charge[sele_index].value = str(truth_particles.loc[self.part_ids[sele_index].value, "Ladung"])
+        self.sel_mass[sele_index].value = str(truth_particles.loc[self.part_ids[sele_index].value, "Masse"])
+        self.sel_KL0[sele_index].value = "kein Hit im $K_L^0$ Detektor"
+        #for i in range(len(self.res_df)):
+        self.KL0_txt[sele_index].value = "kein Hit im $K_L^0$ Detektor"
+        self.energy_txt[sele_index].value = str(self.res_df.loc[sele_index, "Energie"])
+        self.charge_txt[sele_index].value = str(self.res_df.loc[sele_index, "Ladung"])
+        self.moment_txt[sele_index].value = str(self.res_df.loc[sele_index, "impuls"])
+        self.invmas_txt[sele_index].value = str(self.res_df.loc[sele_index, "Masse"])
+        self.radius_txt[sele_index].value = str(self.res_df.loc[sele_index, "Radius"])
+        self.px_txt[sele_index].value = str(self.momenta.loc[sele_index, "px"])
+        self.py_txt[sele_index].value = str(self.momenta.loc[sele_index, "py"])
+        self.pz_txt[sele_index].value = str(self.momenta.loc[sele_index, "pz"])
+
+    def show(self):
+        boxes = []
+        self.energy_txt = []
+        self.px_txt = []
+        self.py_txt = []
+        self.pz_txt = []
+        self.charge_txt = []
+        self.moment_txt = []
+        self.invmas_txt = []
+        self.radius_txt = []
+        self.sel_mass = []
+        self.sel_charge = []
+        self.part_ids = []
+        self.KL0_txt=[]
+        self.sel_KL0=[]
+        self.label1=widgets.Text(value = "Resultate", disabled = True)
+        self.label2=widgets.Text(value = "Bekannte Teilchen zum Vergleichen", disabled = True)
+
+        for i in range(len(self.res_df)):
+            self.px_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$p_x$", disabled = True))
+            self.py_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$p_y$", disabled = True))
+            self.pz_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$p_z$", disabled = True))
+            self.energy_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Energie", disabled = True))
+            self.charge_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Ladung", disabled = True))
+            self.moment_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "impuls", disabled = True))
+            self.invmas_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
+            self.radius_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Radius", disabled = True))
+            self.KL0_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$K_L^0$", disabled = True))
+            self.part_ids.append(widgets.Select(options = truth_particles.index, value = "e+", description = "Teilchen"))
+            self.part_ids[i].observe(self.update, "value")
+            self.out = widgets.Output()
+            self.res_box = widgets.VBox(children=[self.label1, self.energy_txt[i], self.charge_txt[i], self.moment_txt[i], self.invmas_txt[i], self.radius_txt[i],self.px_txt[i],self.py_txt[i],self.pz_txt[i],self.KL0_txt[i]])
+            
+            self.sel_mass.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
+            self.sel_charge.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Ladung", disabled = True))
+            self.sel_KL0.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$K_L^0$", disabled = True))
+            self.sel_box = widgets.VBox(children=[self.label2, self.part_ids[i], self.sel_mass[i], self.sel_charge[i], self.sel_KL0[i]])
+
+            box = widgets.HBox(children=[self.res_box, self.sel_box])
+            boxes.append(box)
+        self.tabs = widgets.Tab(children=boxes)
+        self.tabs.observe(self.update, "selected_index")
+        for i in range(len(self.res_df)):
+            self.tabs.set_title(i,f"Teilchen {i}")
+        self.update()
+        display(self.tabs, self.out)
+
 class MissingWidget():
 
     def calc_missing_part(self, dummy):
