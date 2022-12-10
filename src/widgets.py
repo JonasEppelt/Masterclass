@@ -11,6 +11,8 @@ from copy import deepcopy
 
 from matplotlib.patches import FancyArrowPatch
 from matplotlib.collections import LineCollection
+from matplotlib.patches import Rectangle
+from matplotlib.collections import PatchCollection
 from matplotlib.widgets import LassoSelector
 from matplotlib.path import Path
 from matplotlib.colors import to_rgba_array
@@ -330,7 +332,6 @@ class ECLWidget:
         content = 2*np.sqrt(abs(content))
         self.alphas = np.clip(content,0.2,1)
         
-        
         self.out = widgets.Output()
         with self.out:
             fig, ax = plt.subplots(figsize=(15,6),constrained_layout=True)
@@ -416,8 +417,46 @@ class ECLWidget:
         return pd.DataFrame(radius, columns= ["Radius"])
 
     @property
-    def get_particles_shape(self):
-        return self.vertices
+    def get_selections(self):
+        selectionvertices=[]
+        points=[]
+        xypoints=[]
+        patches=[]
+        minxs=[1000]*len(self.vertices)
+        maxxs=[0]*len(self.vertices)
+        minys=[1000]*len(self.vertices)
+        maxys=[0]*len(self.vertices)
+        colors=[]
+        for i in range(len(self.vertices)):
+            for l in range(len(self.vertices[i])):
+                if self.vertices[i][l][0]<minxs[i]:
+                    minxs[i]=self.vertices[i][l][0]
+                if self.vertices[i][l][0]>maxxs[i]:
+                    maxxs[i]=self.vertices[i][l][0]
+                if self.vertices[i][l][1]<minys[i]:
+                    minys[i]=self.vertices[i][l][1]
+                if self.vertices[i][l][1]>maxys[i]:
+                    maxys[i]=self.vertices[i][l][1]         
+            midx=(maxxs[i]+minxs[i])/2
+            midy=(maxys[i]+minys[i])/2
+            dummypatches=[]
+            selectionvertices.append([(midx-45,midy-45),(midx+45,midy-45),(midx+45,midy+45),(midx-45,midy+45)])
+            selpath = Path(selectionvertices[i])
+            points.append(np.nonzero(selpath.contains_points(self.xys))[0])
+            xypoints.append(self.xys[points[i]])
+            midx = (np.amax(xypoints[i][:,0])-np.amax(-xypoints[i][:,0]))/2
+            midy = (np.amax(xypoints[i][:,1])-np.amax(-xypoints[i][:,1]))/2
+            for l in range(len(xypoints[i])):
+                dummypatches.append(Rectangle((xypoints[i][l][0]-midx-2, xypoints[i][l][1]-midy-2), 4, 4, edgecolor = "black", facecolor = "gray", linewidth = 3))
+            patches.append(dummypatches)
+            hitmask=(self.ecal.crystals_df["content"] > 0)[points[i]]
+            dummycolors=np.array(["gray"]*len(xypoints[i]))
+            dummycolors[hitmask]= "red"
+            dummycolors = to_rgba_array(dummycolors)
+            dummycolors.T[-1] = 0.5
+            dummycolors[hitmask,-1] = self.alphas[points[i]][hitmask]
+            colors.append(dummycolors)
+        return patches,colors
 
 
 true_particle_data = [[0.511, 1],
@@ -436,7 +475,18 @@ true_particle_data = [[0.511, 1],
                      [493.7, +1],
                       [493.7, -1]]
 true_particle_names = ["e+", "e-", "mu+", "mu-", "tau+", "tau-", "Proton", "Antiproton", "Neutron", "pi0", "pi+", "pi-", "K0", "K+", "K-"]
-truth_particles = pd.DataFrame(columns = ["Masse", "Ladung"], data=true_particle_data, index=true_particle_names)
+for n in range(len(true_particle_names)):
+    file=open("Ecal_images/"+true_particle_names[n]+".png", "rb")
+    true_particle_data[n].append(file.read())
+    if true_particle_names[n]=="mu-" or true_particle_names[n]=="mu+":
+        true_particle_data[n].append("Hit")
+    else:
+        true_particle_data[n].append("kein Hit")
+    if true_particle_names[n]=="e+" or true_particle_names[n]=="e-":
+        true_particle_data[n].append("≈1")
+    else:
+        true_particle_data[n].append("≠1")    
+truth_particles = pd.DataFrame(columns = ["Masse", "Ladung","Image","K_L0","E_p"], data=true_particle_data, index=true_particle_names)
 truth_particles.loc[:, "Masse"] = truth_particles["Masse"]*10**(-3)
 
 class MatchingWidget:
@@ -523,7 +573,12 @@ class MatchingWidget2:
         self.energies = ew.get_particles_energy
         self.radius = ew.get_particles_radius
         self.momenta = tw.get_fitted_particles  
-        columns = ["Ladung", "Energie", "impuls", "Masse", "Radius"]
+        self.patches=[]
+        #file=open("testbild.png", "rb")
+        #self.image=file.read()
+        for i in range(len(ew.get_selections[0])):
+            self.patches.append(PatchCollection(np.array(ew.get_selections[0][i]),color=ew.get_selections[1][i]))
+        columns = ["Ladung", "Energie", "impuls", "Masse", "E_p"]
         self.true_df = tw.particles_df
         self.res_df = pd.DataFrame(data = np.zeros((len(self.energies), len(columns))), columns = columns)
         #self.res_df.loc[:,"pt"] = np.sqrt(( self.momenta.loc[:,["px", "py"]]**2).sum())
@@ -537,25 +592,35 @@ class MatchingWidget2:
     def update(self, change = 0):
         sele_index = self.tabs.selected_index
         self.res_df.loc[sele_index, "Energie"] = self.energies.loc[sele_index, "Energie"]
-        self.res_df.loc[sele_index, "Radius"] = np.nan_to_num(self.radius.loc[sele_index, "Radius"])
         self.res_df.loc[sele_index, "Ladung"] = self.momenta.loc[sele_index, "Ladung"]
         self.res_df.loc[sele_index, "impuls"] = np.sqrt((self.momenta.loc[sele_index, ["px", "py", "pz"]]**2).sum().astype("float"))
+        self.res_df.loc[sele_index, "E_p"] = self.res_df.loc[sele_index, "Energie"]/self.res_df.loc[sele_index, "impuls"]
         # if self.res_df.loc[:, "Energie"] > self.res_df.loc[:, "impuls"]:
         self.res_df.loc[:, "Masse"] = np.sqrt(abs(self.res_df.loc[:, "Energie"]**2 - self.res_df.loc[:, "impuls"]**2))
         self.res_df.loc[:, "Masse"] = self.res_df.loc[:, "Masse"].fillna(0)
         self.sel_charge[sele_index].value = str(truth_particles.loc[self.part_ids[sele_index].value, "Ladung"])
         self.sel_mass[sele_index].value = str(truth_particles.loc[self.part_ids[sele_index].value, "Masse"])
-        self.sel_KL0[sele_index].value = "kein Hit im $K_L^0$ Detektor"
+        self.sel_image[sele_index].value = truth_particles.loc[self.part_ids[sele_index].value, "Image"]
+        self.sel_label[sele_index].value = "So sieht ein typisches "+self.part_ids[sele_index].value + " Teilchen im Ecal aus:"
+        self.sel_KL0[sele_index].value = truth_particles.loc[self.part_ids[sele_index].value, "K_L0"] + " im KLM Detektor"
+        self.sel_E_p[sele_index].value = truth_particles.loc[self.part_ids[sele_index].value, "E_p"]
+
         #for i in range(len(self.res_df)):
-        self.KL0_txt[sele_index].value = "kein Hit im $K_L^0$ Detektor"
+        self.KL0_txt[sele_index].value = "kein Hit im KLM Detektor"
         self.energy_txt[sele_index].value = str(self.res_df.loc[sele_index, "Energie"])
         self.charge_txt[sele_index].value = str(self.res_df.loc[sele_index, "Ladung"])
         self.moment_txt[sele_index].value = str(self.res_df.loc[sele_index, "impuls"])
         self.invmas_txt[sele_index].value = str(self.res_df.loc[sele_index, "Masse"])
-        self.radius_txt[sele_index].value = str(self.res_df.loc[sele_index, "Radius"])
+        self.E_p_txt[sele_index].value = str(self.res_df.loc[sele_index, "E_p"])
         self.px_txt[sele_index].value = str(self.momenta.loc[sele_index, "px"])
         self.py_txt[sele_index].value = str(self.momenta.loc[sele_index, "py"])
         self.pz_txt[sele_index].value = str(self.momenta.loc[sele_index, "pz"])
+        self.ax1.cla()
+        self.ax1.set_ylim(-50,50)
+        self.ax1.set_xlim(-50,50)
+        self.ax1.set_yticklabels([])
+        self.ax1.set_xticklabels([])
+        self.ax1.add_collection(self.patches[sele_index])
 
     def show(self):
         boxes = []
@@ -566,12 +631,20 @@ class MatchingWidget2:
         self.charge_txt = []
         self.moment_txt = []
         self.invmas_txt = []
-        self.radius_txt = []
+        self.E_p_txt = []
         self.sel_mass = []
         self.sel_charge = []
         self.part_ids = []
         self.KL0_txt=[]
         self.sel_KL0=[]
+        self.sel_E_p=[]
+        self.sel_label=[]
+        self.sel_image=[]
+        self.out1 = widgets.Output()
+        with self.out1:
+            self.fig1, self.ax1 = plt.subplots(figsize=(3.4,3.4),constrained_layout=True)
+        self.ax1.set_ylim(-3,103)
+        self.ax1.set_xlim(-3,103)
         self.label1=widgets.Text(value = "Resultate", disabled = True)
         self.label2=widgets.Text(value = "Bekannte Teilchen zum Vergleichen", disabled = True)
 
@@ -581,19 +654,23 @@ class MatchingWidget2:
             self.pz_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$p_z$", disabled = True))
             self.energy_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Energie", disabled = True))
             self.charge_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Ladung", disabled = True))
-            self.moment_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "impuls", disabled = True))
+            self.moment_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Impuls", disabled = True))
             self.invmas_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
-            self.radius_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Radius", disabled = True))
-            self.KL0_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$K_L^0$", disabled = True))
+            self.E_p_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$E/p$", disabled = True))
+            self.KL0_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$K_L^0$", disabled = True))   
+            self.res_box = widgets.VBox(children=[self.label1, self.energy_txt[i], self.charge_txt[i], self.moment_txt[i], self.invmas_txt[i], self.E_p_txt[i],self.px_txt[i],self.py_txt[i],self.pz_txt[i],self.KL0_txt[i],self.out1])
+            self.res_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "700px ",width = "370px")            
+
             self.part_ids.append(widgets.Select(options = truth_particles.index, value = "e+", description = "Teilchen"))
             self.part_ids[i].observe(self.update, "value")
-            self.out = widgets.Output()
-            self.res_box = widgets.VBox(children=[self.label1, self.energy_txt[i], self.charge_txt[i], self.moment_txt[i], self.invmas_txt[i], self.radius_txt[i],self.px_txt[i],self.py_txt[i],self.pz_txt[i],self.KL0_txt[i]])
-            
             self.sel_mass.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
             self.sel_charge.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Ladung", disabled = True))
+            self.sel_E_p.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$E/p$", disabled = True))
             self.sel_KL0.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$K_L^0$", disabled = True))
-            self.sel_box = widgets.VBox(children=[self.label2, self.part_ids[i], self.sel_mass[i], self.sel_charge[i], self.sel_KL0[i]])
+            self.sel_label.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", disabled = True))
+            self.sel_image.append(widgets.Image(value=truth_particles.loc["e+", "Image"],format='png',width=320,height=320))
+            self.sel_box = widgets.VBox(children=[self.label2, self.part_ids[i], self.sel_mass[i], self.sel_charge[i], self.sel_KL0[i],self.sel_E_p[i],self.sel_label[i],self.sel_image[i]])
+            self.sel_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "700px ",width = "370px")  
 
             box = widgets.HBox(children=[self.res_box, self.sel_box])
             boxes.append(box)
@@ -602,7 +679,9 @@ class MatchingWidget2:
         for i in range(len(self.res_df)):
             self.tabs.set_title(i,f"Teilchen {i}")
         self.update()
-        display(self.tabs, self.out)
+        with self.out1:
+            plt.show()
+        display(self.tabs)
 
 class MissingWidget():
 
@@ -641,3 +720,82 @@ class MissingWidget():
         self.boxes.append(button)
         self.final_box = widgets.HBox(children=self.boxes)
         display(self.final_box)
+
+
+class KLMDetektor:
+
+    def __init__(self,data=[[40,34],[100,50],[170,15]],detec=[True,True,True],phi_position=[40,100,170]):
+        
+        self.data = data
+        self.detec = detec
+        self.rows=64
+        self.columns=200
+        edge_gap_ratio=2/4
+        self.blocksize=4
+        self.edgesize=self.blocksize*edge_gap_ratio
+        self.gapsize=self.blocksize*(1-edge_gap_ratio)
+        self.x_position = np.array(phi_position)*self.blocksize
+        self.patches=[]
+        self.patchcolors=np.zeros((self.columns*self.rows,4))
+        self.patchcolors[:,2]=1
+
+        for c in range(self.columns):
+            for r in range(self.rows):
+                self.patches.append(Rectangle((c*self.blocksize,r*self.blocksize), self.edgesize, self.edgesize, edgecolor = "blue", facecolor = "gray", linewidth = 1))     
+                intensity=0
+                for i in range(len(self.data)):
+                    if self.detec[i]==True:
+                        intensity=intensity+np.exp((-(c-self.data[i][0])**2-(r-self.data[i][1])**2)*0.04)
+                self.patchcolors[c*self.rows+r,3]=np.random.normal(loc=intensity, scale=0.13)
+
+        self.patchcolors[:,3] = np.clip(self.patchcolors[:,3],0.1,1)
+        
+        self.out = widgets.Output()
+        with self.out:
+            fig, ax = plt.subplots(figsize=(15,6),constrained_layout=True)
+
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+
+        ax.set_ylim(-10,self.rows*self.blocksize+10-self.edgesize)
+        ax.set_xlim(-10,self.columns*self.blocksize+10-self.edgesize)
+        self.patchartist = ax.add_collection(PatchCollection(self.patches,color=self.patchcolors))
+        self.lineartist = ax.add_collection(LineCollection([]))
+        self.patchartist.set_animated(True)
+        self.lineartist.set_animated(True)
+        self.bm = BlitManager(fig.canvas , self.patchartist, self.lineartist)
+        
+    def update(self, change):
+        if self.tabs.selected_index is None:
+            segments=[]
+        else:
+            segments=[[[self.x_position[self.tabs.selected_index],-5],[self.x_position[self.tabs.selected_index],self.rows*self.blocksize+5-self.edgesize]]]
+        
+        self.lineartist.set_segments(segments)
+        self.lineartist.set_color("red")
+        self.bm.update()
+        
+    def show(self):
+
+        self.tabs = widgets.Accordion()
+        self.tabs.observe(self.update, names = "selected_index")
+        self.tickbox = []
+        self.box_list = []
+        for i in range(len(self.data)):
+            self.tabs.set_title(i,f"Teilchen {i}")
+            self.tickbox.append(widgets.RadioButtons(options=['Hit', 'kein Hit'],  description='Wurde hier ein Teilchen erkannt?'))
+            self.tickbox[i].observe(self.update, names = "value")
+            self.box_list.append(widgets.HBox([self.tickbox[i]]))
+        self.tabs.children = self.box_list
+        self.final_box = widgets.VBox(children=[self.tabs, self.out])
+        with self.out:
+            plt.show()
+        display(self.final_box)
+        self.update(0)
+
+    @property
+    def KLM_hit(self):
+        hit = []
+        for i in range(len(self.tickbox)):
+            hit.append(True if (self.tickbox[i].value == "Hit") else False)
+        return hit
