@@ -33,6 +33,11 @@ def get_arrow(posx,posy,phi,size=1,granularity=100): #returns (100,2) x,y array 
     arrow = arrow + [posx,posy]
     return arrow
 
+def get_sphere(x, y, z):
+    phi = np.arctan2(y, x)
+    theta = np.arctan2(np.sqrt(x**2+y**2), z)
+    return phi, theta
+
 class BlitManager: #manages the blitting for tracker and ecal widget
     def __init__(self, canvas, artist, artist2=None):
         """copy from matplotlib website (blitting)"""
@@ -569,16 +574,18 @@ class MatchingWidget:
         display(self.tabs, self.out)
 
 class MatchingWidget2:
-    def __init__(self, ew, tw, cheat_mode=True, cheating_threshhold = 1e-2) -> None:
+    def __init__(self, ew, tw, kl=None, cheat_mode=True, cheating_threshhold = 1e-2) -> None:
         self.energies = ew.get_particles_energy
         self.radius = ew.get_particles_radius
-        self.momenta = tw.get_fitted_particles  
+        self.momenta = tw.get_fitted_particles
+        if kl is not None:
+            self.KLM_hits = np.array(kl.KLM_hit)
+        else:
+            self.KLM_hits = np.array([0]*len(self.momenta))
         self.patches=[]
-        #file=open("testbild.png", "rb")
-        #self.image=file.read()
         for i in range(len(ew.get_selections[0])):
             self.patches.append(PatchCollection(np.array(ew.get_selections[0][i]),color=ew.get_selections[1][i]))
-        columns = ["Ladung", "Energie", "impuls", "Masse", "E_p"]
+        columns = ["Ladung", "Energie", "impuls", "Masse", "E_p","KLM"]
         self.true_df = tw.particles_df
         self.res_df = pd.DataFrame(data = np.zeros((len(self.energies), len(columns))), columns = columns)
         #self.res_df.loc[:,"pt"] = np.sqrt(( self.momenta.loc[:,["px", "py"]]**2).sum())
@@ -595,6 +602,7 @@ class MatchingWidget2:
         self.res_df.loc[sele_index, "Ladung"] = self.momenta.loc[sele_index, "Ladung"]
         self.res_df.loc[sele_index, "impuls"] = np.sqrt((self.momenta.loc[sele_index, ["px", "py", "pz"]]**2).sum().astype("float"))
         self.res_df.loc[sele_index, "E_p"] = self.res_df.loc[sele_index, "Energie"]/self.res_df.loc[sele_index, "impuls"]
+        self.res_df.loc[sele_index, "KLM"] = self.KLM_hits[sele_index]
         # if self.res_df.loc[:, "Energie"] > self.res_df.loc[:, "impuls"]:
         self.res_df.loc[:, "Masse"] = np.sqrt(abs(self.res_df.loc[:, "Energie"]**2 - self.res_df.loc[:, "impuls"]**2))
         self.res_df.loc[:, "Masse"] = self.res_df.loc[:, "Masse"].fillna(0)
@@ -606,7 +614,7 @@ class MatchingWidget2:
         self.sel_E_p[sele_index].value = truth_particles.loc[self.part_ids[sele_index].value, "E_p"]
 
         #for i in range(len(self.res_df)):
-        self.KL0_txt[sele_index].value = "kein Hit im KLM Detektor"
+        self.KL0_txt[sele_index].value = "kein Hit im KLM Detektor" if self.res_df.loc[sele_index, "KLM"] == 0 else "Hit im KLM Detektor"
         self.energy_txt[sele_index].value = str(self.res_df.loc[sele_index, "Energie"])
         self.charge_txt[sele_index].value = str(self.res_df.loc[sele_index, "Ladung"])
         self.moment_txt[sele_index].value = str(self.res_df.loc[sele_index, "impuls"])
@@ -722,18 +730,38 @@ class MissingWidget():
         display(self.final_box)
 
 
-class KLMDetektor:
-
-    def __init__(self,data=[[40,34],[100,50],[170,15]],detec=[True,True,True],phi_position=[40,100,170]):
-        
-        self.data = data
-        self.detec = detec
+class KLMWidget:
+    def __init__(self,data_path,tw=None,always_hit=False):
         self.rows=64
         self.columns=200
         edge_gap_ratio=2/4
         self.blocksize=4
         self.edgesize=self.blocksize*edge_gap_ratio
-        self.gapsize=self.blocksize*(1-edge_gap_ratio)
+        self.gapsize=self.blocksize*(1-edge_gap_ratio)        
+        data = pd.read_hdf(data_path)
+        self.data=[]
+        self.detec=[]
+        for i in range(len(data)):
+            self.data.append([int((np.argmax(data.iloc[i,np.arange(3,6627)].to_numpy())%144)*(self.columns/144)),int(int(np.argmax(data.iloc[i,np.arange(3,6627)].to_numpy())/144)*(self.rows/46))])
+            if (data.iloc[i,6628]==13 or data.iloc[i,6628]==-13 or always_hit):
+                self.detec.append(True)
+            else:
+                self.detec.append(False)
+
+        if tw is None:
+            phi_position=[]
+            for i in range(len(self.data)):
+                phi_position.append(self.data[i][0])
+        else:
+            phi_position=-tw.get_ecl_position*2+890
+            mask=phi_position>720
+            phi_position[mask]-=720
+            mask=phi_position>720
+            phi_position[mask]-=720
+            mask=phi_position<0
+            phi_position[mask]+=720
+            phi_position = phi_position/5/144*self.columns
+
         self.x_position = np.array(phi_position)*self.blocksize
         self.patches=[]
         self.patchcolors=np.zeros((self.columns*self.rows,4))
@@ -744,7 +772,7 @@ class KLMDetektor:
                 self.patches.append(Rectangle((c*self.blocksize,r*self.blocksize), self.edgesize, self.edgesize, edgecolor = "blue", facecolor = "gray", linewidth = 1))     
                 intensity=0
                 for i in range(len(self.data)):
-                    if self.detec[i]==True:
+                    if self.detec[i]:
                         intensity=intensity+np.exp((-(c-self.data[i][0])**2-(r-self.data[i][1])**2)*0.04)
                 self.patchcolors[c*self.rows+r,3]=np.random.normal(loc=intensity, scale=0.13)
 
@@ -797,5 +825,5 @@ class KLMDetektor:
     def KLM_hit(self):
         hit = []
         for i in range(len(self.tickbox)):
-            hit.append(True if (self.tickbox[i].value == "Hit") else False)
+            hit.append(1 if (self.tickbox[i].value == "Hit") else 0)
         return hit
