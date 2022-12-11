@@ -125,7 +125,7 @@ class TrackingWidget:
             drawtrace = False  
         else:  
             self.select_particles[self.index].phi = self.phi[self.index].value+self.phi_fine[self.index].value
-            self.select_particles[self.index].charge = -1 if self.charge[self.index].value == "negative Ladung" else 1
+            self.select_particles[self.index].charge = -1 if self.charge[self.index].value == "negative el. Ladung" else 1
             self.select_particles[self.index].radius = (self.r[self.index].value+self.r_fine[self.index].value)/self.B
 
             drawtrace = True
@@ -198,7 +198,7 @@ class TrackingWidget:
             self.phi[i].observe(self.update, names = "value")
             self.phi_fine.append(widgets.FloatSlider(0 ,min = -0.15, max = 0.15, step = 0.001, description = "$\phi fine$",continuous_update=self.continuous_update))
             self.phi_fine[i].observe(self.update, names = "value")
-            self.charge.append(widgets.RadioButtons(options=['positive Ladung', 'negative Ladung'],  description=''))
+            self.charge.append(widgets.RadioButtons(options=['positive el. Ladung', 'negative el. Ladung'],  description=''))
             self.charge[i].observe(self.update, names = "value")
             if self.show_truthbutton:
                 p_box = widgets.VBox([self.hit_n_misses[i],self.r_label[i],self.r[i], self.r_fine[i],self.phi_label[i], self.phi[i], self.phi_fine[i], self.charge[i], self.truthbutton])
@@ -237,7 +237,7 @@ class TrackingWidget:
 
     @property
     def get_fitted_particles(self):
-        df = pd.DataFrame(columns = ["pt", "phi", "Ladung", "radius"])
+        df = pd.DataFrame(columns = ["pt", "phi", "el. Ladung", "radius"])
         for i in range(self.n_particles):
             df.loc[i,:] = [self.select_particles[i].momentum(), self.select_particles[i].phi, self.select_particles[i].charge, self.select_particles[i].radius]
         df.loc[:,"px"] = np.cos(df.loc[:,"phi"].astype("float"))*df.loc[:,"pt"]
@@ -273,7 +273,7 @@ class TestDetektor:
         self.pt = 10
 
     def update(self,change):
-        self.particle.charge = -1 if self.charge_widget.value == "negative Ladung" else 1
+        self.particle.charge = -1 if self.charge_widget.value == "negative el. Ladung" else 1
         self.B = self.b_widget.value/5
         self.particle.B = self.B    
         self.particle.radius = self.pt_widget.value/self.B if self.B != 0 else 100000
@@ -302,7 +302,7 @@ class TestDetektor:
         self.pt_widget.observe(self.update, names = "value")
         self.b_widget= widgets.Checkbox((False), description = "B-Feld")
         self.b_widget.observe(self.update, names = "value")
-        self.charge_widget= widgets.RadioButtons(options=['positive Ladung', 'negative Ladung'],  description='')
+        self.charge_widget= widgets.RadioButtons(options=['positive el. Ladung', 'negative el. Ladung'],  description='')
         self.charge_widget.observe(self.update, names = "value")
         self.out = widgets.Output()
         p_box = widgets.VBox([self.pt_widget, self.b_widget,self.charge_widget])
@@ -491,7 +491,7 @@ for n in range(len(true_particle_names)):
         true_particle_data[n].append("≈1")
     else:
         true_particle_data[n].append("≠1")    
-truth_particles = pd.DataFrame(columns = ["Masse", "Ladung","Image","K_L0","E_p"], data=true_particle_data, index=true_particle_names)
+truth_particles = pd.DataFrame(columns = ["Masse", "el. Ladung","Image","K_L0","E_p"], data=true_particle_data, index=true_particle_names)
 truth_particles.loc[:, "Masse"] = truth_particles["Masse"]*10**(-3)
 
 class MatchingWidget:
@@ -499,7 +499,7 @@ class MatchingWidget:
         self.energies = ew.get_particles_energy
         self.radius = ew.get_particles_radius
         self.momenta = tw.get_fitted_particles  
-        columns = ["Ladung", "Energie", "impuls", "Masse", "Radius"]
+        columns = ["el. Ladung", "Energie", "impuls", "Masse", "Radius"]
         self.true_df = tw.particles_df
         self.res_df = pd.DataFrame(data = np.zeros((len(self.energies), len(columns))), columns = columns)
         #self.res_df.loc[:,"pt"] = np.sqrt(( self.momenta.loc[:,["px", "py"]]**2).sum())
@@ -514,16 +514,16 @@ class MatchingWidget:
         sele_index = self.tabs.selected_index
         self.res_df.loc[sele_index, "Energie"] = self.energies.loc[sele_index, "Energie"]
         self.res_df.loc[sele_index, "Radius"] = np.nan_to_num(self.radius.loc[sele_index, "Radius"])
-        self.res_df.loc[sele_index, "Ladung"] = self.momenta.loc[sele_index, "Ladung"]
+        self.res_df.loc[sele_index, "el. Ladung"] = self.momenta.loc[sele_index, "el. Ladung"]
         self.res_df.loc[sele_index, "impuls"] = np.sqrt((self.momenta.loc[sele_index, ["px", "py", "pz"]]**2).sum().astype("float"))
         # if self.res_df.loc[:, "Energie"] > self.res_df.loc[:, "impuls"]:
         self.res_df.loc[:, "Masse"] = np.sqrt(abs(self.res_df.loc[:, "Energie"]**2 - self.res_df.loc[:, "impuls"]**2))
         self.res_df.loc[:, "Masse"] = self.res_df.loc[:, "Masse"].fillna(0)
-        self.charge_comp[sele_index].value = str(self.res_df.loc[sele_index, "Ladung"] - truth_particles.loc[self.part_ids[sele_index].value, "Ladung"])
+        self.charge_comp[sele_index].value = str(self.res_df.loc[sele_index, "el. Ladung"] - truth_particles.loc[self.part_ids[sele_index].value, "el. Ladung"])
         self.mass_comp[sele_index].value = str(self.res_df.loc[sele_index, "Masse"] - truth_particles.loc[self.part_ids[sele_index].value, "Masse"])
         for i in range(len(self.res_df)):
             self.energy_txt[i].value = str(self.res_df.loc[sele_index, "Energie"])
-            self.charge_txt[i].value = str(self.res_df.loc[sele_index, "Ladung"])
+            self.charge_txt[i].value = str(self.res_df.loc[sele_index, "el. Ladung"])
             self.moment_txt[i].value = str(self.res_df.loc[sele_index, "impuls"])
             self.invmas_txt[i].value = str(self.res_df.loc[sele_index, "Masse"])
             self.radius_txt[i].value = str(self.res_df.loc[sele_index, "Radius"])
@@ -549,7 +549,7 @@ class MatchingWidget:
             self.py_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$p_y$", disabled = True))
             self.pz_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$p_z$", disabled = True))
             self.energy_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Energie", disabled = True))
-            self.charge_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Ladung", disabled = True))
+            self.charge_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "el. Ladung", disabled = True))
             self.moment_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "impuls", disabled = True))
             self.invmas_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
             self.radius_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Radius", disabled = True))
@@ -560,7 +560,7 @@ class MatchingWidget:
             self.res_box = widgets.VBox(children=[self.energy_txt[i], self.charge_txt[i], self.moment_txt[i], self.invmas_txt[i], self.radius_txt[i]])
             self.vec_box = widgets.VBox(children=[self.energy_txt[i], self.px_txt[i], self.py_txt[i], self.pz_txt[i]])
             self.mass_comp.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Massendifferenz", disabled = True))
-            self.charge_comp.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Ladungsdifferenz", disabled = True))
+            self.charge_comp.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "el. Ladungsdifferenz", disabled = True))
             self.comb_box = widgets.VBox(children=[self.mass_comp[i], self.charge_comp[i]])
             hbox = widgets.HBox(children=[self.res_box, self.part_ids[i], self.comb_box])
             hbox2 = widgets.HBox(children=[self.partic_list,self.vec_box])
@@ -599,14 +599,14 @@ class MatchingWidget2:
     def update(self, change = 0):
         sele_index = self.tabs.selected_index
         self.res_df.loc[sele_index, "Energie"] = self.energies.loc[sele_index, "Energie"]
-        self.res_df.loc[sele_index, "Ladung"] = self.momenta.loc[sele_index, "Ladung"]
+        self.res_df.loc[sele_index, "el. Ladung"] = self.momenta.loc[sele_index, "el. Ladung"]
         self.res_df.loc[sele_index, "impuls"] = np.sqrt((self.momenta.loc[sele_index, ["px", "py", "pz"]]**2).sum().astype("float"))
         self.res_df.loc[sele_index, "E_p"] = self.res_df.loc[sele_index, "Energie"]/self.res_df.loc[sele_index, "impuls"]
         self.res_df.loc[sele_index, "KLM"] = self.KLM_hits[sele_index]
         # if self.res_df.loc[:, "Energie"] > self.res_df.loc[:, "impuls"]:
         self.res_df.loc[:, "Masse"] = np.sqrt(abs(self.res_df.loc[:, "Energie"]**2 - self.res_df.loc[:, "impuls"]**2))
         self.res_df.loc[:, "Masse"] = self.res_df.loc[:, "Masse"].fillna(0)
-        self.sel_charge[sele_index].value = str(truth_particles.loc[self.part_ids[sele_index].value, "Ladung"])
+        self.sel_charge[sele_index].value = str(truth_particles.loc[self.part_ids[sele_index].value, "el. Ladung"])
         self.sel_mass[sele_index].value = str(truth_particles.loc[self.part_ids[sele_index].value, "Masse"])
         self.sel_image[sele_index].value = truth_particles.loc[self.part_ids[sele_index].value, "Image"]
         self.sel_label[sele_index].value = "So sieht ein typisches "+self.part_ids[sele_index].value + " Teilchen im Ecal aus:"
@@ -616,7 +616,7 @@ class MatchingWidget2:
         #for i in range(len(self.res_df)):
         self.KL0_txt[sele_index].value = "kein Hit im KLM Detektor" if self.res_df.loc[sele_index, "KLM"] == 0 else "Hit im KLM Detektor"
         self.energy_txt[sele_index].value = str(self.res_df.loc[sele_index, "Energie"])
-        self.charge_txt[sele_index].value = str(self.res_df.loc[sele_index, "Ladung"])
+        self.charge_txt[sele_index].value = str(self.res_df.loc[sele_index, "el. Ladung"])
         self.moment_txt[sele_index].value = str(self.res_df.loc[sele_index, "impuls"])
         self.invmas_txt[sele_index].value = str(self.res_df.loc[sele_index, "Masse"])
         self.E_p_txt[sele_index].value = str(self.res_df.loc[sele_index, "E_p"])
@@ -661,7 +661,7 @@ class MatchingWidget2:
             self.py_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$p_y$", disabled = True))
             self.pz_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$p_z$", disabled = True))
             self.energy_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Energie", disabled = True))
-            self.charge_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Ladung", disabled = True))
+            self.charge_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "el. Ladung", disabled = True))
             self.moment_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Impuls", disabled = True))
             self.invmas_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
             self.E_p_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$E/p$", disabled = True))
@@ -672,7 +672,7 @@ class MatchingWidget2:
             self.part_ids.append(widgets.Select(options = truth_particles.index, value = "e+", description = "Teilchen"))
             self.part_ids[i].observe(self.update, "value")
             self.sel_mass.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
-            self.sel_charge.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Ladung", disabled = True))
+            self.sel_charge.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "el. Ladung", disabled = True))
             self.sel_E_p.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$E/p$", disabled = True))
             self.sel_KL0.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$K_L^0$", disabled = True))
             self.sel_label.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", disabled = True))
@@ -809,11 +809,12 @@ class KLMWidget:
         self.tabs.observe(self.update, names = "selected_index")
         self.tickbox = []
         self.box_list = []
+        self.boxtext=widgets.Text(value = "Wurde hier ein Teilchen erkannt?", disabled = True)
         for i in range(len(self.data)):
             self.tabs.set_title(i,f"Teilchen {i}")
-            self.tickbox.append(widgets.RadioButtons(options=['Hit', 'kein Hit'],  description='Wurde hier ein Teilchen erkannt?'))
+            self.tickbox.append(widgets.RadioButtons(options=['ja', 'nein']))
             self.tickbox[i].observe(self.update, names = "value")
-            self.box_list.append(widgets.HBox([self.tickbox[i]]))
+            self.box_list.append(widgets.HBox([self.boxtext,self.tickbox[i]]))
         self.tabs.children = self.box_list
         self.final_box = widgets.VBox(children=[self.tabs, self.out])
         with self.out:
@@ -825,5 +826,5 @@ class KLMWidget:
     def KLM_hit(self):
         hit = []
         for i in range(len(self.tickbox)):
-            hit.append(1 if (self.tickbox[i].value == "Hit") else 0)
+            hit.append(1 if (self.tickbox[i].value == "ja") else 0)
         return hit
