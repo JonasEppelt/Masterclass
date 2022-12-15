@@ -166,7 +166,7 @@ class TrackingWidget:
         limit = self.tracker.layers +3
         self.ax.set_xlim(-limit,limit)
         self.ax.set_ylim(-limit,limit)
-
+        self.ax.set_axis_off()
         artist = self.ax.add_collection(LineCollection([]))
         self.artist=artist
         self.artist.set_animated(True)
@@ -247,20 +247,22 @@ class TrackingWidget:
 
     @property
     def get_ecl_position(self):
+        phi=[]
         theta=[]
         r=0
         for i in range(self.n_particles):
-            th=self.select_particles[i].charge*np.pi/2-self.select_particles[i].phi+np.arccos(r/(2*self.select_particles[i].radius))*self.select_particles[i].charge-np.pi/2
-            if th < 0:
-                th += 2*np.pi  
-            if th < 0:
-                th += 2*np.pi  
-            if th > np.pi:
-                th -= 2*np.pi  
-            if th > np.pi:
-                th -= 2*np.pi                
-            theta.append(th) 
-        return np.array(theta)*180/np.pi
+            phi_0=self.select_particles[i].charge*np.pi/2-self.select_particles[i].phi+np.arccos(r/(2*self.select_particles[i].radius))*self.select_particles[i].charge-np.pi/2
+            if phi_0 < 0:
+                phi_0 += 2*np.pi  
+            if phi_0 < 0:
+                phi_0 += 2*np.pi  
+            if phi_0 > np.pi:
+                phi_0 -= 2*np.pi  
+            if phi_0 > np.pi:
+                phi_0 -= 2*np.pi                
+            phi.append(phi_0)
+            theta.append(np.arctan2(self.select_particles[i].momentum(),self.particles_df.loc[i,"pz"])) 
+        return np.array(phi)*180/np.pi,np.array(theta)*180/np.pi
 
 class TestDetektor:
     def __init__(self, B=0.1, layers=8, n_segments=3,ecl_segments=10, k=2):
@@ -317,7 +319,7 @@ class ECLWidget:
     def __init__(self, data_path, noise_rate = 0.05, tw=None, idx=None):
         data = pd.read_hdf(data_path)
         if tw is not None:
-            self.line_position=-tw.get_ecl_position*2+890
+            self.line_position=-tw.get_ecl_position[0]*2+890
             mask=self.line_position>720
             self.line_position[mask]-=720
             mask=self.line_position<0
@@ -342,6 +344,8 @@ class ECLWidget:
             fig, ax = plt.subplots(figsize=(15,6),constrained_layout=True)
         ax.set_ylim(-10,46*5+10)
         ax.set_xlim(-10,144*5+10)
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
         self.artist = ax.add_collection(self.ecal.collection)
         self.lineartist=ax.add_collection(LineCollection([]))
         self.xys = np.array([self.ecal.crystals_df["x"] + self.edge_size/2,self.ecal.crystals_df["y"] + self.edge_size/2],dtype = "float64").T
@@ -731,7 +735,7 @@ class MissingWidget():
 
 
 class KLMWidget:
-    def __init__(self,data_path,tw=None,always_hit=False):
+    def __init__(self,data_path,tw=None,always_hit=False,a=35,b=1.2):
         self.rows=64
         self.columns=200
         edge_gap_ratio=2/4
@@ -750,10 +754,12 @@ class KLMWidget:
 
         if tw is None:
             phi_position=[]
+            theta_position=[]
             for i in range(len(self.data)):
                 phi_position.append(self.data[i][0])
+                theta_position.append(self.data[i][1])
         else:
-            phi_position=-tw.get_ecl_position*2+890
+            phi_position=-tw.get_ecl_position[0]*2+890
             mask=phi_position>720
             phi_position[mask]-=720
             mask=phi_position>720
@@ -761,8 +767,10 @@ class KLMWidget:
             mask=phi_position<0
             phi_position[mask]+=720
             phi_position = phi_position/5/144*self.columns
+            theta_position=(tw.get_ecl_position[1]-33)/1.45*(self.rows/64)
 
         self.x_position = np.array(phi_position)*self.blocksize
+        self.y_position = np.array(theta_position)*self.blocksize
         self.patches=[]
         self.patchcolors=np.zeros((self.columns*self.rows,4))
         self.patchcolors[:,2]=1
@@ -797,7 +805,11 @@ class KLMWidget:
         if self.tabs.selected_index is None:
             segments=[]
         else:
-            segments=[[[self.x_position[self.tabs.selected_index],-5],[self.x_position[self.tabs.selected_index],self.rows*self.blocksize+5-self.edgesize]]]
+            segments=[[[self.x_position[self.tabs.selected_index]-10*self.blocksize,self.y_position[self.tabs.selected_index]-10*self.blocksize],
+                       [self.x_position[self.tabs.selected_index]-10*self.blocksize,self.y_position[self.tabs.selected_index]+10*self.blocksize],
+                       [self.x_position[self.tabs.selected_index]+10*self.blocksize,self.y_position[self.tabs.selected_index]+10*self.blocksize],
+                       [self.x_position[self.tabs.selected_index]+10*self.blocksize,self.y_position[self.tabs.selected_index]-10*self.blocksize],
+                       [self.x_position[self.tabs.selected_index]-10*self.blocksize,self.y_position[self.tabs.selected_index]-10*self.blocksize]]]
         
         self.lineartist.set_segments(segments)
         self.lineartist.set_color("red")
