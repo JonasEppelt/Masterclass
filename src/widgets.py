@@ -318,15 +318,18 @@ class ECLWidget:
 
     def __init__(self, data_path, noise_rate = 0.05, tw=None, idx=None):
         data = pd.read_hdf(data_path)
-        if tw is not None:
-            self.line_position=-tw.get_ecl_position[0]*2+890
-            mask=self.line_position>720
-            self.line_position[mask]-=720
-            mask=self.line_position<0
-            self.line_position[mask]+=720
-            self.drawline=True
-        else:
+        if tw is None:
             self.drawline=False
+        else:
+            self.line_positionx=-tw.get_ecl_position[0]*2+890
+            mask=self.line_positionx>720
+            self.line_positionx[mask]-=720
+            mask=self.line_positionx<0
+            self.line_positionx[mask]+=720
+            self.drawline=True
+            self.line_positiony=(tw.get_ecl_position[1]-33)/1.45*(46/64)*(5/4)*4.2
+
+
         coords = [f'{i}' for i in np.arange(0, 6624)]
         if idx is None:
             hits = data[coords]
@@ -374,7 +377,11 @@ class ECLWidget:
         self.ecal.collection.set_edgecolors(edgecolors)
         self.ecal.collection.set_facecolors(facecolors)
         if self.drawline==True and self.allhidden==False:
-            self.lineartist.set_segments([np.array([np.ones(100)*self.line_position[self.particle_index],np.linspace(-5,46*5+5,100)]).T])
+            self.lineartist.set_segments([[[self.line_positionx[self.particle_index]-10*5,self.line_positiony[self.particle_index]-10*5],
+                                           [self.line_positionx[self.particle_index]-10*5,self.line_positiony[self.particle_index]+10*5],
+                                           [self.line_positionx[self.particle_index]+10*5,self.line_positiony[self.particle_index]+10*5],
+                                           [self.line_positionx[self.particle_index]+10*5,self.line_positiony[self.particle_index]-10*5],
+                                           [self.line_positionx[self.particle_index]-10*5,self.line_positiony[self.particle_index]-10*5]]])
             self.lineartist.set_color(["blue"])
         self.bm_ecal.update()
         particle_mask = self.ecal.select_particles.loc[self.particle_index, :].to_numpy()>0
