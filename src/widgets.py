@@ -26,7 +26,7 @@ def make_box_layout():
         width = "1000px"
      )
 
-def get_arrow(posx,posy,phi,size=1,granularity=100): #returns (100,2) x,y array of an arrow at position x,y pointing at angle phi 
+def get_arrow(posx,posy,phi,size=1,granularity=100): #returns (granularity,2) x,y array of an arrow at position x,y pointing at angle phi 
     x=(np.array([0,0,-2,2,0,0])*np.cos(phi)-np.array([-3,3,0,0,3,-3])*np.sin(phi))*size
     y=(np.array([0,0,-2,2,0,0])*np.sin(phi)+np.array([-3,3,0,0,3,-3])*np.cos(phi))*size
     arrow = np.append(np.array([x,y]).T,np.zeros((granularity-6,2)),axis=0)
@@ -110,7 +110,7 @@ class TrackingWidget:
             self.arrows.append(get_arrow(posx=arrow_x,posy=arrow_y,phi = arrow_phi + np.pi/2,size=0.18,granularity=self.granularity))
 
             # build select particles used for simulation
-            p = Particle(0.00001, 0, self.B, np.random.randint(0,1)*2-1)
+            p = Particle(0.00001, 0, self.B, np.random.randint(0,1)*2-1, granularity=self.granularity)
             self.select_particles.append(p)
 
         self.tracker.make_tracker_mask(self.truth_particles) #color the hits of the true particles red 

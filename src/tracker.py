@@ -125,5 +125,4 @@ class Tracker:
         mask = theta > 2*np.pi
         theta[mask] -= 2*np.pi
 
-
         return (theta > self.segments.begin) & (theta < self.segments.end) & (self.segments.radius <= abs(2*particle.radius))
