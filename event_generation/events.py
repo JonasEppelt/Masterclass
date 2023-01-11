@@ -13,14 +13,14 @@ event_dict = {
     "pipigamma": ["211", "-211", "22"],
     "DM0ee": ["d0", "11", "-11"],
     "DM0gammaee": ["d0", "22", "-11", "11"],
-    "DM4DM4eemumu": ["d4", "d4", "-11", "11", "-13", "13"],
     "DM1ee": ["d1", "-11", "11"],
     "DM2ee": ["d2", "-11", "11"],
     "DM2pipi": ["d2", "-211", "211"],
-    "DM3mumu": ["d3", "-13", "13"]
+    "DM3mumu": ["d3", "-13", "13"],
+    "DM4DM4eemumu": ["d4", "d4", "-11", "11", "-13", "13"],
 }
 events_dict = {}
 
-for i in range(1):
+for i in range(10):
     for key, value in event_dict.items():
         events_dict.update({f"{key}{i}": value})
