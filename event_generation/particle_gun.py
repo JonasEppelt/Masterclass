@@ -25,7 +25,7 @@ class getECLInfo(basf2.Module):
         super().__init__()
         self.output = output
         self.obj_eclgeometrypar = Belle2.ECL.ECLGeometryPar.Instance()
-        self.barrel = np.arange(1153, 7777, dtype=int)
+        self.barrel = np.arange(0, 8736, dtype=int)       #np.arange(1153, 7777, dtype=int)
         self.col_names = [f'{i}' for i in self.barrel]
         self.pdg = pdg
         self.theta = theta
@@ -58,6 +58,12 @@ class getECLInfo(basf2.Module):
         ignore_event = False
         correctpdg = False
 
+        self.is_dm = str(self.pdg).startswith("d")
+        if not self.is_dm:
+            self_pdg=int(self.pdg)
+        else:
+            self_pdg = self.pdg
+
         print("in event: ", self.p, self.theta)
 
         if len(self.mcparticles) == 1:
@@ -77,30 +83,30 @@ class getECLInfo(basf2.Module):
 
                     cells[ids] = rec_energy
                     energyinbarrel = True
-
-            if energyinbarrel:
+            if energyinbarrel or self.is_dm:
 
                 for mc_idx, mc_particle in enumerate(self.mcparticles):
                     mcrelations = mc_particle.getRelationsWith('ECLCalDigits')
 
-                    pdg = mc_particle.getPDG()
+                    pdg = int(mc_particle.getPDG())
                     print(pdg)
-                    
-                    if int(pdg) == int(self.pdg):
+                    print( pdg == self_pdg or self.is_dm, (pdg==self_pdg), pdg, self_pdg)
+
+                    if pdg == self_pdg or self.is_dm:
                         correctpdg = True
                         mass = mc_particle.getMass()
                         energy = mc_particle.getEnergy()
-
+                        print(mcrelations.size())
                         for mc_id in range(mcrelations.size()):
                             # mc_energy = mcrelations.weight(mc_id)
                             id = mcrelations.object(mc_id).getCellId()
-
-                            if id in cells:
+                            print(id in cells or self.is_dm)
+                            if id in cells or self.is_dm:
                                 correct_pdg = pdg
                                 correct_mass = mass
                                 tot_energy = energy
 
-                if correctpdg:
+                if correctpdg or self.is_dm:
                 
                     all_energy = [[e for e in cells.values()]]
                     print(np.shape(np.array(all_energy)))
@@ -127,6 +133,7 @@ class getECLInfo(basf2.Module):
         if len(self.tot_data>0):
             print(self.tot_data['mass'])
             self.tot_data = self.tot_data[self.tot_data['pdg']!=0]
+            print(self.tot_data)
             self.tot_data.to_csv(self.output+'.csv')
         else:
             print("no matching events generated")
@@ -161,12 +168,19 @@ class EvtGenTask(Basf2PathTask):
         return path
 
     def create_path(self):
-        main = basf2.create_path()
         df = self.read_input()
         particle = df.iloc[self.index]
         print(particle)
+        is_dm =  str(particle['pdg']).startswith('d')
+
+        converted_pdg = 22 if is_dm else int(particle['pdg']) # use gamma for simulating DM and setting to 0 later
+        
+        
+
+        main = basf2.create_path()
         particlegun = basf2.register_module('ParticleGun')
-        particlegun.param('pdgCodes', [int(particle['pdg'])])
+
+        particlegun.param('pdgCodes', [converted_pdg])
 
         particlegun.param('momentumGeneration', 'fixed')
         particlegun.param('momentumParams', [particle['p']])
@@ -180,7 +194,7 @@ class EvtGenTask(Basf2PathTask):
         main.add_module(particlegun)
 
         main.add_module('EventInfoSetter',
-                        evtNumList=10)
+                        evtNumList=50)
 
         main.add_module('Gearbox')
         main.add_module('Geometry', useDB=True)

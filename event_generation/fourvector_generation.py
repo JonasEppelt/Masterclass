@@ -16,7 +16,7 @@ masses_dict = {
     "111": 134.9768e-3, 
     "211": 139.57039e-3, 
     "-211": 139.57039e-3,
-    "22": 0,
+    "22": 1e-9, #massless particle conlifct with realtive error in evaluating numerical solutions
     "13": 206.7682830e-3,
     "-13": 206.7682830e-3,
     "321": 493.677e-3,
@@ -26,7 +26,13 @@ masses_dict = {
     "-15": 1776.86e-3,
     "2212": 938.272088e-3,
     "-2212": 938.272088e-3,
-    "2112": 939.565420e-3
+    "2112": 939.565420e-3,
+    "12": 1e-9, #is 0
+    "d0": 100e-3,
+    "d1": 10e-3,
+    "d2": 1.2,
+    "d3": 0.5,
+    "d4": 1e-3
 }
 
 
@@ -138,9 +144,10 @@ class FourVecGenTask(luigi.Task):
         theta_in_barrel = False
         correct_masses = False
         ECL_energy = False
-        while not (theta_in_barrel and correct_masses and ECL_energy):
+        factor = 10 if n<=4 else 5
+        while not (correct_masses and ECL_energy): #(theta_in_barrel and 
             #generate n-2 momenta
-            part = (np.random.rand(n-2,3, )-0.5)*10
+            part = (np.random.rand(n-2,3, )-0.5)*factor
             #calculate n-2 Energies from masses
             part_E = np.sqrt(masses[:-2]**2 + (part**2).sum(1))
             event = pd.DataFrame(part, columns = ["px", "py", "pz"])
@@ -167,8 +174,8 @@ class FourVecGenTask(luigi.Task):
             #solve it
             E0,E1,pz0,pz1 = self.solve_non_lin_eq(non_lin_eq=non_lin_eq)
             #complete event DataFrame
-            event.loc[n-1, ["E","px","py","pz"]] = [E0,px0,py0,pz0]
-            event.loc[n, ["E","px","py","pz"]] = [E1,px1,py1,pz1]
+            event.loc[n-2, ["E","px","py","pz"]] = [E0,px0,py0,pz0]
+            event.loc[n-1, ["E","px","py","pz"]] = [E1,px1,py1,pz1]
             event = event.astype("float")
             event.loc[:,"theta"] = event.v4.theta
             event.loc[:,"pt"] = event.v4.pt
@@ -177,10 +184,13 @@ class FourVecGenTask(luigi.Task):
             event.loc[:,"InvM"] = event.v4.M
             event.loc[:,"pdg"] = self.pdgs
             # calculate checks if event generated correctly
-            theta = event.astype("float").v4.theta/(2*np.pi)*360
+            theta = event.v4.theta/(2*np.pi)*360 #.astype("float")
             theta_in_barrel = ((theta>33) & (theta<128)).sum()==n
-            correct_masses = (abs(event.loc[:,"InvM"] - masses) < 1e-3*masses).sum() == n
+            correct_masses = (abs(event.loc[:,"InvM"] - masses) < 1e-3*(masses+1e-2)).sum() == n
             ECL_energy = (event.loc[:,"E"] > 0.400).sum() == n
+            print(abs(event.loc[:,"InvM"] - masses), 1e-3*(masses+1e-2))
+            print(event)
+            print(ECL_energy, correct_masses)
         
         return event
                     

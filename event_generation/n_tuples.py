@@ -38,21 +38,24 @@ class ConcatTask(luigi.Task):
         #load all particles
         for i in range(len(self.pdgs)):
             input_key = f"{self.name}_{i}_particle_gun"
+            print(self.input_dict[input_key])
             df = pd.read_csv(self.input_dict[input_key])   
             df = df.reset_index()
+            print(df)
             df = df.loc[[0],:]
+            print(df)
             dfs.append(df)
         df = pd.concat(dfs).reset_index()
         # concat particles
-        old_cells = [str(i) for i in np.arange(1153, 7777, dtype=int)]
-        cells = [str(i) for i in np.arange(0, 6624)]
+        old_cells = [str(i) for i in np.arange(0, 8736, dtype=int)] #np.arange(1153, 7777, dtype=int)
+        cells = [str(i) for i in np.arange(0, 8736, dtype=int)]  #np.arange(0, 6624)
         rename_cells_dict = {o:c for o,c in zip(old_cells, cells)}
         df = df.rename(rename_cells_dict, axis = "columns")
         # remove crystals, that are not in 9x9 around center
         center = df[cells].idxmax(axis=1).to_numpy(dtype='int')
-        for i in range(len(df)):
-            df_mask = (abs(int((center[i]/144.))%46 - df[cells].columns.astype(int)/144.%46) < 9) & (abs((center[i])%144 - (df[cells].columns.astype(int))%144) < 9)
-            df.loc[i, cells] = df.loc[i, cells].where(df_mask, 0.0)
+        #for i in range(len(df)):
+        #    df_mask = (abs(int((center[i]/144.))%46 - df[cells].columns.astype(int)/144.%46) < 9) & (abs((center[i])%144 - (df[cells].columns.astype(int))%144) < 9)
+        #    df.loc[i, cells] = df.loc[i, cells].where(df_mask, 0.0)
         #fancy code to put all energy into ecl crystalls (important for e.g. muons)
         df['energy_diff'] = df['energy'] - df[cells].sum(axis=1)
         new_df = copy.deepcopy(df)
@@ -66,7 +69,7 @@ class ConcatTask(luigi.Task):
                     value = new_df.loc[k, str(i)].item()
                     new_df.at[k, str(i)] = value + addede[j]
                     j+=1
-        new_df.to_hdf(os.path.join(self.output_path, f"{self.name}.h5"), key = "event")
+        new_df.sample(frac=1).to_hdf(os.path.join(self.output_path, f"{self.name}.h5"), key = "event")
 
     def output(self):
         output_key = f"{self.name}_concated"

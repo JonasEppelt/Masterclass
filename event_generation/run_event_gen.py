@@ -3,7 +3,7 @@ import b2luigi as luigi
 
 from events import events_dict
 
-base_path = "/ceph/jeppelt/girlsday"
+base_path = "/work/jeppelt/girlsday2022/new_event_prod"
 
 class EventGenStarterTask(luigi.WrapperTask):
     batch_system = "local"
