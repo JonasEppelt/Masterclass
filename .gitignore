@@ -8,3 +8,5 @@ src/__pycache*
 *git_hash*
 *__pycache*
 venv*
+*checkpoints*
+.virtual_documents*
