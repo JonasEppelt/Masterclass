@@ -14,7 +14,7 @@ git clone https://git.scc.kit.edu/ukjyf/belleii_masterclass.git
 ```
 Diese Masterclass nutzt python3 und benötigt zusätzliche packete die folgendermasen installiert werden können:
 ```bash
-pip install jupyterlab numpy pandas tables matplolib ipympl 
+pip install jupyterlab numpy pandas tables matplolib ipympl jupyterlab-git jupyter-lsp ipywidgets=7.7.2
 ```
 Um die Notebooks zu starten, starte jupyter lab
 ```
@@ -23,6 +23,8 @@ jupyter lab
 und wähle eines der Notebooks `Introduction.ipynb`, `Event_Interpretation.ipynb` oder `Fehlen_hier_Teilchen.ipynb` aus.
 
 
+## Generieren von Ereignissen
+Um neue Ereignisse zu simulieren, wird die Belle~II software `basf2` und b2luigi benötigt.
 ---
 
 ## Tracking widget
