@@ -1,6 +1,6 @@
 # Belle II Masterclass
 
-by Torben Ferber, Isabel Haide, Jonas Eppelt, Filipp Gostner
+by Jonas Eppelt, Filipp Gostner, Isabel Haide, Torben Ferber,
 
 Basierend auf Jupyter-Notebooks werden die grundlegende Prinzipien im Arbeiten mit Teilchendetektoren wie Belle~II vermittelt.
 Mit interaktiven Widgets lernt man wie die Ladung, der Impuls und die Energie von Teilchen bestimmt wird.
@@ -14,7 +14,7 @@ git clone https://git.scc.kit.edu/ukjyf/belleii_masterclass.git
 ```
 Diese Masterclass nutzt python3 und benötigt zusätzliche packete die folgendermasen installiert werden können:
 ```bash
-pip install jupyterlab numpy pandas tables matplolib ipympl jupyterlab-git jupyter-lsp ipywidgets=7.7.2
+pip install jupyterlab numpy pandas tables matplolib ipympl jupyterlab-git jupyter-lsp ipywidgets=8.0.4
 ```
 Um die Notebooks zu starten, starte jupyter lab
 ```
