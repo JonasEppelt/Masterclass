@@ -27,6 +27,12 @@ und wähle eines der Notebooks `Introduction.ipynb`, `Event_Interpretation.ipynb
 Um neue Ereignisse zu simulieren, wird die Belle~II software `basf2` und b2luigi benötigt.
 ---
 
+## development install
+Im Verzeichnis ausführen:
+```bash
+python3 -m pip install -e .
+```
+
 ## Tracking widget
 
 Stellt ein Teilchen Tracker dar. Der Tracker ließt aus einem .h5 File die Daten über mehrere Teilchen aus. Im Tracker werden alle Segmente die die Teilchen überflogen haben rot gekennzeichnet, zusätzlich kommt noch Rauschen dazu. 
