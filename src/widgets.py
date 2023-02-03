@@ -773,26 +773,29 @@ def visibility_correction(x): #funktion zum anpassen der sichtbarkeit von hits i
     return np.sqrt(abs(x))*2 
 
 class ECL2Widget:
-    def __init__(self,data_path):
-        
-        df=pd.read_hdf(data_path)               #get content in cells from dataframe
-        self.n_particles=len(df)
-        self.content = np.zeros(8736)
-        self.centerindices = np.zeros(self.n_particles)
-        for n in range(self.n_particles): 
-            self.content=self.content+df.iloc[n].to_numpy()[np.arange(2,8738)]
-            #self.centerindices[n]=np.argmax(df.iloc[n].to_numpy()[np.arange(2,8738)])[0]    
+    def __init__(self,data_path,noise=0.15):
 
-        self.totalpatches=8736                  #setup patch parameters
-        self.patchsize=4.6
+        self.size = 14                              #size
+        self.totalpatches=8736
+        df=pd.read_hdf(data_path)                   #get content in cells from dataframe
+        self.n_particles=len(df)
+        self.content = np.zeros(self.totalpatches)
+        self.centerindices = np.zeros(self.n_particles,dtype=int)
+        for n in range(self.n_particles): 
+            self.content=self.content+df.iloc[n].to_numpy()[np.arange(2,self.totalpatches+2)]
+            self.centerindices[n]=np.argmax(df.iloc[n].to_numpy()[np.arange(2,8738)])  
+                          
+        self.patchsize=4.6                          #setup patch parameters
         self.patchcolors=np.zeros((self.totalpatches,4))
         self.patchcolors[:,0] = 1
-        self.patchcolors[:,3] = visibility_correction(self.content)
-        self.patchcolors[:,3] = np.clip(self.patchcolors[:,3],0.3,1)
+        self.patchcolors[:,3] = visibility_correction(self.content)+np.random.normal(0,noise,self.totalpatches)
+        self.patchcolors[:,3] = np.clip(self.patchcolors[:,3],0.2,1)
+        self.patchcolors[np.where(self.patchcolors[:,3]<0.22),:]=[0,0,0,0.25]
         self.patchcoords=np.empty([2,0])
+        self.patchoffset=np.empty([2,0])
         self.patchangles=np.empty([0])
 
-        fwdcapcenter=np.array([-200,200])#make forwardcap
+        fwdcapcenter=np.array([-200,200])           #make forwardcap
         self.fwdcaprings=13      
         self.fwdcapringsize = np.array([48,48,64,64,64,96,96,96,96,96,96,144,144])
         self.fwdcapringradius = np.linspace(49.62,125.82,13)
@@ -800,8 +803,9 @@ class ECL2Widget:
             phi=np.linspace(0,2*np.pi,self.fwdcapringsize[n],endpoint=False)
             self.patchangles=np.append(self.patchangles,phi)
             self.patchcoords=np.append(self.patchcoords,np.full((self.fwdcapringsize[n],2),fwdcapcenter).T+self.fwdcapringradius[n]*np.array([np.cos(phi),np.sin(phi)]),axis=1)
-         
-        barrelcenter=np.array([0,-100])#make barrel
+            self.patchoffset=np.append(self.patchoffset,-np.sqrt(2)*self.patchsize*np.array([np.sin(np.pi/4-phi),np.cos(np.pi/4-phi)])/2,axis=1)
+
+        barrelcenter=np.array([0,-100])             #make barrel
         self.barrelrows=46                      
         self.barrelcolumns=144
         barrelxposis=np.linspace(-np.pi*139.1,np.pi*139.1,144)
@@ -809,29 +813,30 @@ class ECL2Widget:
         for n in range(self.barrelrows):
             self.patchangles=np.append(self.patchangles,np.zeros(144))
             self.patchcoords=np.append(self.patchcoords,np.full((self.barrelcolumns,2),barrelcenter).T+np.array([barrelxposis,np.ones(self.barrelcolumns)*barrelyposis[n]]),axis=1)
+            self.patchoffset=np.append(self.patchoffset,-np.ones([2,self.barrelcolumns])*self.patchsize/2,axis=1)
            
-        bwdcapcenter=np.array([200,200])#make backwardcap
+        bwdcapcenter=np.array([200,200])            #make backwardcap
         self.bwdcaprings=10
         self.bwdcapringsize = np.array([64,64,64,96,96,96,96,96,144,144])
         self.bwdcapringradius = np.linspace(58.51,129.2,10)
         for n in reversed(range(self.bwdcaprings)):
             phi=np.linspace(0,2*np.pi,self.bwdcapringsize[n],endpoint=False)
             self.patchangles=np.append(self.patchangles,phi)
-            self.patchcoords=np.append(self.patchcoords,np.full((self.bwdcapringsize[n],2),bwdcapcenter).T+self.bwdcapringradius[n]*np.array([np.cos(phi),np.sin(phi)]),axis=1)   
+            self.patchcoords=np.append(self.patchcoords,np.full((self.bwdcapringsize[n],2),bwdcapcenter).T+self.bwdcapringradius[n]*np.array([np.cos(phi),np.sin(phi)]),axis=1)
+            self.patchoffset=np.append(self.patchoffset,-np.sqrt(2)*self.patchsize*np.array([np.sin(np.pi/4-phi),np.cos(np.pi/4-phi)])/2,axis=1)  
 
         patches=[]
-        for n in range(self.totalpatches):    #make patchcollection
-            patches.append(Rectangle((self.patchcoords[0,n],self.patchcoords[1,n]),width=self.patchsize,height=self.patchsize,angle=self.patchangles[n]*180/np.pi))
+        for n in range(self.totalpatches):          #make patchcollection
+            patches.append(Rectangle((self.patchcoords[:,n]+self.patchoffset[:,n]),width=self.patchsize,height=self.patchsize,angle=self.patchangles[n]*180/np.pi))
         self.collection=PatchCollection(np.array(patches),color=self.patchcolors)
 
-        self.out = widgets.Output()       #setup plot, blitting and lasso
+        self.out = widgets.Output()                 #setup plot, blitting and lasso
         with self.out:
-            self.fig, self.ax = plt.subplots(figsize=(15,6),constrained_layout=True)
-        self.ax.set_ylim(-270,350)
-        self.ax.set_xlim(-460,460)
+            self.fig, self.ax = plt.subplots(figsize=(self.size,self.size*60/89),constrained_layout=True)
+        self.ax.set_ylim(-260,340)
+        self.ax.set_xlim(-445,445)
         self.ax.set_yticklabels([])
         self.ax.set_xticklabels([])
-        self.ax.set_aspect('equal', 'box')
         self.patchartist=self.ax.add_collection(self.collection)
         self.patchartist.set_animated(True)
         self.lineartist=self.ax.add_collection(LineCollection([]))
@@ -841,10 +846,11 @@ class ECL2Widget:
 
         self.sel_patchidcs=[np.array([],dtype=int)]*self.n_particles   #indices of selected patches for each particle
         self.sel_particle=0                                            #selected particle index
+        self.energies=np.zeros(self.n_particles)                       #energy in selected cells for each particle
 
 
     def show(self):
-        self.accordion = widgets.Accordion()
+        self.accordion = widgets.Accordion()        #make widgets and stuff
         self.accordion.observe(self.change_particle, names = "selected_index")
         self.energy_labels = []
         self.box_list = []
@@ -857,22 +863,25 @@ class ECL2Widget:
         with self.out:
             plt.show()
         display(self.final_box)
+        self.onselect()
 
     def change_particle(self,change):
         if self.accordion.selected_index is not None:
-            self.sel_particle = self.accordion.selected_index      #if no index is selected sel_particle is set to "particle" -1
+            self.sel_particle = self.accordion.selected_index       #if no index is selected sel_particle is set to "particle" -1
         else:
             self.sel_particle = -1
         self.onselect()
 
     def onselect(self, verts=None):
-        if verts is not None and self.sel_particle > -1:
+        if verts is not None and self.sel_particle > -1:            #energies and cell selections are only updated if a particle is selected and there are new vertecies given
             path = Path(verts)
             self.sel_patchidcs[self.sel_particle] = np.nonzero(path.contains_points(self.patchcoords.T))[0]
-            self.energy_labels[self.sel_particle].value = str(round(np.sum(self.content[self.sel_patchidcs[self.sel_particle]]),4))
+            self.energies[self.sel_particle]=np.sum(abs(self.content[self.sel_patchidcs[self.sel_particle]]))
+            self.energy_labels[self.sel_particle].value = str(round(self.energies[self.sel_particle],5))
 
-        edgecolors = np.clip(self.patchcolors,0,1)       #xd
+        edgecolors = np.clip(self.patchcolors,0,1)                  #xd
         for n in range(self.n_particles):
             edgecolors[self.sel_patchidcs[n]]= [0,0,1,0.5] if n==self.sel_particle else [1,1,0,0.3]
+            edgecolors[self.centerindices[n]]= [0,0,0,1] if n==self.sel_particle else edgecolors[self.centerindices[n]]
         self.patchartist.set_edgecolors(edgecolors)      
         self.bm.update()
