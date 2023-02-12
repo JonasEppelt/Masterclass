@@ -48,8 +48,7 @@ class BlitManager: #manages the blitting for tracker and ecal widget
             self.artist2=artist2
             self.twoartists=True
         else:
-            self.twoartists=False
-        
+            self.twoartists=False  
         # grab the background on every draw
         self.cid = canvas.mpl_connect("draw_event", self.on_draw)
 
@@ -827,7 +826,7 @@ class ECL2Widget:
 
         patches=[]
         for n in range(self.totalpatches):          #make patchcollection
-            patches.append(Rectangle((self.patchcoords[:,n]+self.patchoffset[:,n]),width=self.patchsize,height=self.patchsize,angle=self.patchangles[n]*180/np.pi))
+            patches.append(Rectangle((self.patchcoords[:,n]+self.patchoffset[:,n]),width=self.patchsize,height=self.patchsize,angle=self.patchangles[n]*180/np.pi,linewidth=20))
         self.collection=PatchCollection(np.array(patches),color=self.patchcolors)
 
         self.out = widgets.Output()                 #setup plot, blitting and lasso
@@ -885,3 +884,99 @@ class ECL2Widget:
             edgecolors[self.centerindices[n]]= [0,0,0,1] if n==self.sel_particle else edgecolors[self.centerindices[n]]
         self.patchartist.set_edgecolors(edgecolors)      
         self.bm.update()
+
+    @property
+    def get_Patches(self,rand=20):
+        selectioncorners=np.zeros((self.n_particles,2,5))
+        midpoints=np.zeros((self.n_particles,2))
+        size=np.ones((self.n_particles))
+        for i in range(self.n_particles):
+            ptchcrds=self.patchcoords[:,self.sel_patchidcs[i]]
+            if len(ptchcrds[0])>0:
+                midpoints[i,0]=(np.amax(ptchcrds[0])-np.amax(-ptchcrds[0]))/2
+                midpoints[i,1]=(np.amax(ptchcrds[1])-np.amax(-ptchcrds[1]))/2           
+                size[i]=np.amax(ptchcrds[0])+np.amax(-ptchcrds[0]) 
+                if size[i] < (np.amax(ptchcrds[1])+np.amax(-ptchcrds[1])):  
+                    size[i] = np.amax(ptchcrds[1])+np.amax(-ptchcrds[1])
+                selectioncorners[i,0,0]=midpoints[i,0]-size[i]/2-rand
+                selectioncorners[i,1,0]=midpoints[i,1]-size[i]/2-rand
+                selectioncorners[i,0,1]=midpoints[i,0]+size[i]/2+rand
+                selectioncorners[i,1,1]=midpoints[i,1]-size[i]/2-rand
+                selectioncorners[i,0,2]=midpoints[i,0]+size[i]/2+rand
+                selectioncorners[i,1,2]=midpoints[i,1]+size[i]/2+rand
+                selectioncorners[i,0,3]=midpoints[i,0]-size[i]/2-rand
+                selectioncorners[i,1,3]=midpoints[i,1]+size[i]/2+rand
+                selectioncorners[i,0,4]=selectioncorners[i,0,0]
+                selectioncorners[i,1,4]=selectioncorners[i,1,0]      
+
+        all_patches=[]
+        colors=[]
+        for i in range(self.n_particles):
+            path = Path(selectioncorners[i].T)
+            patchindices=np.nonzero(path.contains_points(self.patchcoords.T))[0]
+            patches=[]
+            for l in range(len(patchindices)):
+                patches.append(Rectangle((self.patchcoords[:,patchindices[l]]+self.patchoffset[:,patchindices[l]]-midpoints[i])*(50/(size[i]+2*rand)),
+                                         width=self.patchsize*(50/(size[i]+2*rand)),height=self.patchsize*(50/(size[i]+2*rand)),
+                                         angle=self.patchangles[patchindices[l]]*180/np.pi,linewidth=20))
+            colors.append(self.patchcolors[patchindices])
+            all_patches.append(patches)
+            
+        return all_patches,colors
+
+class KLM2Widget():
+    def __init__(self):
+        self.klmsegments=18
+        self.segmentwidth=4
+        self.klmradius=19
+
+        self.tracker=Tracker(layers = 13, n_segments = 2, ecl_segments=14, k=2,dist=0.2, noise = 0, linewidth = 2, ignore_noise = True,granularity=100,trackercolor="gray")
+        self.ecl_collection=LineCollection([16*np.array([np.cos(np.linspace(0,6.3)),np.sin(np.linspace(0,6.3))]).T], color = np.array([1,0,0,0.6]), linewidths = 5)
+        
+        self.segments_coords=np.zeros((self.klmsegments,100,2))
+        for i in range(self.klmsegments):
+            points=np.zeros((100,2))
+            t = np.linspace(i*2*np.pi/self.klmsegments+0.015,(i+1)*2*np.pi/self.klmsegments-0.015, 25)   
+            t_rev = np.linspace((i+1)*2*np.pi/self.klmsegments-0.015,i*2*np.pi/self.klmsegments+0.015, 25) 
+            points[np.arange(0,25)]=self.klmradius*np.array([np.sin(t),np.cos(t)]).T
+            points[np.arange(50,75)]=(self.segmentwidth+self.klmradius)*np.array([np.sin(t_rev),np.cos(t_rev)]).T
+            points[np.arange(25,50)]=np.array([np.linspace(points[24,0],points[50,0],25),np.linspace(points[24,1],points[50,1],25)]).T
+            points[np.arange(75,100)]=np.array([np.linspace(points[74,0],points[0,0],25),np.linspace(points[74,1],points[0,1],25)]).T
+            self.segments_coords[i]=points
+        self.klm_collection=LineCollection(self.segments_coords, color = np.array([0,0,1,0.9]), linewidths = 3)
+
+        self.out = widgets.Output()
+        with self.out:
+            fig, ax = plt.subplots(figsize=(7,7),constrained_layout=True)
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+        ax.set_ylim(-28,28)
+        ax.set_xlim(-28,28)
+        self.lineartist = ax.add_collection(LineCollection([]))
+        self.lineartist.set_animated(True)
+        ax.add_collection(self.tracker.get_tracker_collection())
+        ax.add_collection(self.ecl_collection)
+        ax.add_collection(self.klm_collection)
+        self.bm = BlitManager(fig.canvas ,self.lineartist)
+
+    def update(self, change):
+        a=4
+        
+    def show(self):
+
+        self.tabs = widgets.Accordion()
+        self.tabs.observe(self.update, names = "selected_index")
+        self.tickbox = []
+        self.box_list = []
+        self.boxtext=widgets.Text(value = "Wurde hier ein Teilchen erkannt?", disabled = True)
+        for i in range(3):
+            self.tabs.set_title(i,f"Teilchen {i}")
+            self.tickbox.append(widgets.RadioButtons(options=['ja', 'nein']))
+            self.tickbox[i].observe(self.update, names = "value")
+            self.box_list.append(widgets.HBox([self.boxtext,self.tickbox[i]]))
+        self.tabs.children = self.box_list
+        self.final_box = widgets.VBox(children=[self.tabs, self.out])
+        with self.out:
+            plt.show()
+        display(self.final_box)
+        self.update(0)
