@@ -925,7 +925,20 @@ class ECL2Widget:
         return all_patches,colors
 
 class KLM2Widget():
-    def __init__(self):
+    def __init__(self,data_path,tstr,testphi,testc):
+        self.always_hit=True
+        self.data = pd.read_hdf(data_path)
+        self.detec=[]
+        for i in range(1): #len(self.data)
+            if (self.data.iloc[i,6628]==13 or self.data.iloc[i,6628]==-13 or self.always_hit):
+                self.detec.append(True)
+            else:
+                self.detec.append(False)
+
+        self.tstr=tstr
+        self.testphi=testphi
+        self.testc=testc
+
         self.klmsegments=18
         self.segmentwidth=4
         self.klmradius=19
@@ -960,8 +973,16 @@ class KLM2Widget():
         self.bm = BlitManager(fig.canvas ,self.lineartist)
 
     def update(self, change):
-        a=4
-        
+        r=np.linspace(0,17.5,50)
+        theta=self.testphi+np.arccos(r/(2*self.tstr))
+        phi_2=-np.arctan2(r[48]*np.cos(theta[48])-r[1+48]*np.cos(theta[1+48]),r[48]*np.sin(theta[48])-r[1+48]*np.sin(theta[1+48]))
+        theta2=phi_2-np.arccos(r/(2*self.tstr))
+        trace=np.append(np.array([r*np.cos(theta),r*np.sin(theta)]).T,np.array([r[-1]*np.cos(theta[-1])+r*np.cos(theta2),r[-1]*np.sin(theta[-1])+r*np.sin(theta2)]).T,axis=0)
+        self.lineartist.set_segments([trace])
+
+        self.lineartist.set_colors(["red"])
+        self.bm.update()        
+
     def show(self):
 
         self.tabs = widgets.Accordion()
@@ -969,7 +990,7 @@ class KLM2Widget():
         self.tickbox = []
         self.box_list = []
         self.boxtext=widgets.Text(value = "Wurde hier ein Teilchen erkannt?", disabled = True)
-        for i in range(3):
+        for i in range(1): #len(self.data)
             self.tabs.set_title(i,f"Teilchen {i}")
             self.tickbox.append(widgets.RadioButtons(options=['ja', 'nein']))
             self.tickbox[i].observe(self.update, names = "value")
