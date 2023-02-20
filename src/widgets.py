@@ -925,19 +925,16 @@ class ECL2Widget:
         return all_patches,colors
 
 class KLM2Widget():
-    def __init__(self,data_path,tstr,testphi,testc):
-        self.always_hit=True
+    def __init__(self,data_path,always_hit=False,B=0.1):
+        self.always_hit=always_hit
         self.data = pd.read_hdf(data_path)
         self.detec=[]
-        for i in range(1): #len(self.data)
-            if (self.data.iloc[i,6628]==13 or self.data.iloc[i,6628]==-13 or self.always_hit):
+        self.B=B
+        for i in range(len(self.data)): 
+            if (self.data.iloc[i]["pdg"]==13 or self.data.iloc[i]["pdg"]==-13 or self.always_hit):
                 self.detec.append(True)
             else:
                 self.detec.append(False)
-
-        self.tstr=tstr
-        self.testphi=testphi
-        self.testc=testc
 
         self.klmsegments=18
         self.segmentwidth=4
@@ -947,16 +944,25 @@ class KLM2Widget():
         self.ecl_collection=LineCollection([16*np.array([np.cos(np.linspace(0,6.3)),np.sin(np.linspace(0,6.3))]).T], color = np.array([1,0,0,0.6]), linewidths = 5)
         
         self.segments_coords=np.zeros((self.klmsegments,100,2))
+        self.segments_angle=np.zeros((self.klmsegments,2))
         for i in range(self.klmsegments):
             points=np.zeros((100,2))
-            t = np.linspace(i*2*np.pi/self.klmsegments+0.015,(i+1)*2*np.pi/self.klmsegments-0.015, 25)   
-            t_rev = np.linspace((i+1)*2*np.pi/self.klmsegments-0.015,i*2*np.pi/self.klmsegments+0.015, 25) 
+            self.segments_angle[i]=np.array([i*2*np.pi/self.klmsegments+0.015,(i+1)*2*np.pi/self.klmsegments-0.015])
+            t = np.linspace(self.segments_angle[i,0],self.segments_angle[i,1], 25)   
+            t_rev = np.linspace(self.segments_angle[i,1],self.segments_angle[i,0], 25) 
             points[np.arange(0,25)]=self.klmradius*np.array([np.sin(t),np.cos(t)]).T
             points[np.arange(50,75)]=(self.segmentwidth+self.klmradius)*np.array([np.sin(t_rev),np.cos(t_rev)]).T
             points[np.arange(25,50)]=np.array([np.linspace(points[24,0],points[50,0],25),np.linspace(points[24,1],points[50,1],25)]).T
             points[np.arange(75,100)]=np.array([np.linspace(points[74,0],points[0,0],25),np.linspace(points[74,1],points[0,1],25)]).T
             self.segments_coords[i]=points
         self.klm_collection=LineCollection(self.segments_coords, color = np.array([0,0,1,0.9]), linewidths = 3)
+
+        #for i in range(len(self.data)):
+        #    if self.detec[i]:
+        #        r=np.linspace(0,17.5,50)
+        #        theta=-phi_0+np.arccos(r/(2*R_0))*charge+(charge-1)*np.pi/2
+        #        phi_2=-np.arctan2(r[48]*np.cos(theta[48])-r[1+48]*np.cos(theta[1+48]),r[48]*np.sin(theta[48])-r[1+48]*np.sin(theta[1+48]))
+        #        theta2=phi_2-np.arccos(r/(2*R_0))*charge+np.pi*(charge/2-0.5)
 
         self.out = widgets.Output()
         with self.out:
@@ -973,13 +979,20 @@ class KLM2Widget():
         self.bm = BlitManager(fig.canvas ,self.lineartist)
 
     def update(self, change):
-        r=np.linspace(0,17.5,50)
-        theta=self.testphi+np.arccos(r/(2*self.tstr))
-        phi_2=-np.arctan2(r[48]*np.cos(theta[48])-r[1+48]*np.cos(theta[1+48]),r[48]*np.sin(theta[48])-r[1+48]*np.sin(theta[1+48]))
-        theta2=phi_2-np.arccos(r/(2*self.tstr))
-        trace=np.append(np.array([r*np.cos(theta),r*np.sin(theta)]).T,np.array([r[-1]*np.cos(theta[-1])+r*np.cos(theta2),r[-1]*np.sin(theta[-1])+r*np.sin(theta2)]).T,axis=0)
-        self.lineartist.set_segments([trace])
+        self.index=self.tabs.selected_index if self.tabs.selected_index is not None else self.index
 
+        charge=self.data.iloc[self.index]["pdg"]/abs(self.data.iloc[self.index]["pdg"])
+        phi_0=self.data.iloc[self.index]["phi"]
+        R_0=self.data.iloc[self.index]["pt"]/self.B
+
+        r=np.linspace(0,17.5,50)
+        theta=-phi_0+np.arccos(r/(2*R_0))*charge+(charge-1)*np.pi/2
+        phi_2=-np.arctan2(r[48]*np.cos(theta[48])-r[1+48]*np.cos(theta[1+48]),r[48]*np.sin(theta[48])-r[1+48]*np.sin(theta[1+48]))
+        theta2=phi_2-np.arccos(r/(2*R_0))*charge+np.pi*(charge/2-0.5)        
+        trace=np.append(np.array([r*np.cos(theta),r*np.sin(theta)]).T,
+                        np.array([r[-1]*np.cos(theta[-1])+r*np.cos(theta2),r[-1]*np.sin(theta[-1])+r*np.sin(theta2)]).T,axis=0)
+
+        self.lineartist.set_segments([trace])
         self.lineartist.set_colors(["red"])
         self.bm.update()        
 
@@ -990,7 +1003,7 @@ class KLM2Widget():
         self.tickbox = []
         self.box_list = []
         self.boxtext=widgets.Text(value = "Wurde hier ein Teilchen erkannt?", disabled = True)
-        for i in range(1): #len(self.data)
+        for i in range(len(self.data)): 
             self.tabs.set_title(i,f"Teilchen {i}")
             self.tickbox.append(widgets.RadioButtons(options=['ja', 'nein']))
             self.tickbox[i].observe(self.update, names = "value")
