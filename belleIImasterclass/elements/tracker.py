@@ -4,6 +4,7 @@ import numpy as np
 from belleIImasterclass.particlesmanager import ParticlesManager
 from typing import Tuple
 
+import time
 
 class Tracker:
     '''
@@ -16,7 +17,7 @@ class Tracker:
     noise_ratio: float = 0.2, 
     granularity: int =100, 
     linewidth: float = 2.5,
-    B_field: float = 0.2,
+    B_field: float = None,
     ) -> None:
         self._n_layers = n_layers
         self._noise_ratio = noise_ratio
@@ -24,7 +25,7 @@ class Tracker:
         self._n_segments = n_segments
         self._add_segments = add_segments
         self._linewidth = linewidth
-        self._B_field = B_field*15/n_layers
+        self._B_field = 0.5/self._n_layers if not B_field else B_field
         self._segment_df = pd.DataFrame(
             index = np.arange(0,self.n_seg_total, dtype = int),
             columns = ["begin", "end","radius", "noiseflag"],
@@ -40,10 +41,16 @@ class Tracker:
                 self._segment_df.loc[segments_counter, "end"] = len_segment*(i+1)-0.1/(l+1)+offset
                 self._segment_df.loc[segments_counter, "radius"] = l
                 segments_counter += 1
+        
+        theta = np.linspace(self._segment_df["begin"], self._segment_df["end"], self._granularity, dtype = float)
+        self.tracker_lines = (self._segment_df["radius"].to_numpy()[None,None,:] * np.array([np.cos(theta),np.sin(theta)])).T
 
     def get_hits(self, particle, selected=True):
         tracker_selected = "tracker_" if selected else ""
         particle_radius = (particle[f"{tracker_selected}pt"] /self._B_field).astype(float)
+        if particle_radius <= 0.0:
+            return self._segment_df.radius != self._segment_df.radius
+    
         theta=particle[f"{tracker_selected}charge"]*np.pi/2-particle[f"{tracker_selected}phi"]+np.arccos(self._segment_df.radius/(2*particle_radius))*particle[f"{tracker_selected}charge"]-np.pi/2
 
         mask = theta < 0
@@ -55,17 +62,21 @@ class Tracker:
 
         return (theta > self._segment_df.begin) & (theta < self._segment_df.end) & (self._segment_df.radius <= abs(2*particle_radius))
 
-
-    def get_hit_segments(self, particles: ParticlesManager, particle_index: int, selected = True) -> Tuple[np.array, np.array]:
+    def get_hit_segments(self, particles: ParticlesManager, particle_index: int = None, selected = True) -> Tuple[np.array, np.array]:
         hit_segments = np.empty((0,self._granularity, 2))
         colors = []
-        for i in range(len(particles)):
-            hits = self.get_hits(particles[i], selected=selected)
+        if particle_index != None: #if index is given, only check this particle
+            hits = self.get_hits(particles.loc[particle_index,:], selected=selected)
             hit_segments = np.append(hit_segments, self.tracker_lines[hits,:,:], axis = 0)
-            if(i == particle_index):
-                colors.extend(["blue"]*hits.sum())
-            else:
-                colors.extend(["yellow"]*hits.sum())
+            colors = ["blue"]*hits.sum()
+        else:
+            for i in range(len(particles)):
+                hits = self.get_hits(particles.loc[i,:], selected=selected)
+                hit_segments = np.append(hit_segments, self.tracker_lines[hits], axis = 0)
+                if(i == particle_index):
+                    colors.extend(["blue"]*hits.sum())
+                else:
+                    colors.extend(["yellow"]*hits.sum())
         return hit_segments, colors
 
     def get_arrowangle(self,particles: ParticlesManager, particle_index: int):                                          #returns angle for the arrow (angle of the outer most segment)
@@ -73,14 +84,6 @@ class Tracker:
         x,y = last_hit_segment.T
         phi = np.arctan2(x,y)
         return -np.mean(phi)+np.pi/2
-
-    @property
-    def tracker_lines(self) -> np.array:
-        '''
-        returns for each segments lines in the given granularity, in kartesian coordinates
-        '''
-        theta = np.linspace(self._segment_df["begin"], self._segment_df["end"], self._granularity, dtype = float)
-        return (self._segment_df["radius"].to_numpy()[None,None,:] * np.array([np.cos(theta),np.sin(theta)])).T
 
     @property
     def tracker_colors(self) -> np.array:
