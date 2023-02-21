@@ -8,12 +8,14 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import numpy as np
 
+import time 
 
 class TrackingWidget:
     '''
     Widget displaying the tracker and manipulating it
     '''
     def __init__(self, particles_manager: ParticlesManager, continuous_update = True, granularity = 100, **kwargs) -> None:
+        self._helper = None
         self._particles_manager = particles_manager
         self._granularity = granularity
         self._tracker = Tracker(**kwargs, granularity=granularity)
@@ -85,15 +87,20 @@ class TrackingWidget:
         ax.set_xlim(-limit,limit)
         ax.set_ylim(-limit,limit)
         ax.set_axis_off()
-        self._hit_collection = ax.add_collection(LineCollection([]))
-        self._hit_collection.set_animated(True)
+        selection_hit_collection = ax.add_collection(LineCollection([]))
+        self._selection_hit_collection = selection_hit_collection
+        self._selection_hit_collection.set_animated(True)
         self._fig.canvas.toolbar_position = "left"
         ax.add_collection(self._tracker.tracker_base_collection)
         for i in range(len(self._particles_manager)):
-            segments, colors = self._tracker.get_hit_segments(self._particles_manager, i, selected = False)
+            segments, colors = self._tracker.get_hit_segments(self._particles_manager._df, i, selected = False)
             colors = ["red"]*len(colors)
             ax.add_collection(LineCollection(segments, color = colors, linewidth = 2.5))
-        self._blitmanager = BlitManager(self._fig.canvas, self._hit_collection)
+        self._selection_blitmanager = BlitManager(self._fig.canvas, self._selection_hit_collection)
+        unselected_hit_collection = ax.add_collection(LineCollection([]))
+        self._unselected_hit_collection = unselected_hit_collection
+        self._unselected_hit_collection.set_animated(False)
+        self._unselected_blitmanager = BlitManager(self._fig.canvas, self._unselected_hit_collection)
         with self._out:
             plt.show()
         self._fig.canvas.draw()
@@ -107,9 +114,8 @@ class TrackingWidget:
             phi = self._widget_df.loc[self._current_particle_index, ["phi_slider_widget", "phi_fineslider_widget"]].apply(lambda x: x.value).sum()
             charge = -1 if self._widget_df.loc[self._current_particle_index, "charge_widget"].value == "negativ" else 1
             self._particles_manager.tracker_measurement(index = self._current_particle_index, pt = pt, phi = phi, charge = charge)
-
-        segments, colors = self._tracker.get_hit_segments(self._particles_manager, self._current_particle_index)
-        
+        df = self._particles_manager._df
+        segments, colors = self._tracker.get_hit_segments(df, self._current_particle_index)
         if self._current_particle_index != None:
             trace = Tracks(pt = pt, phi = phi, charge = charge, B = self._tracker._B_field, granularity = self._granularity)
             trace_segments = trace.get_trace_array()
@@ -118,23 +124,30 @@ class TrackingWidget:
             arrow_segments = self._arrows[self._current_particle_index]
             segments = np.append(segments, [arrow_segments], axis = 0)
             colors = np.append(colors, ["green"])
-
-
-        self._hit_collection.set_segments(segments)
-        self._hit_collection.set_colors(colors)
-        self._blitmanager.update()
+        
+        self._selection_hit_collection.set_segments(segments)
+        self._selection_hit_collection.set_colors(colors)
+        self._selection_blitmanager.update()
 
     def change_particle(self, update):
         self._current_particle_index = self.particle_selector.selected_index
+        segments, colors = self._tracker.get_hit_segments(self._particles_manager._df)
+        if len(colors) > 0:
+            unselected_segments_mask = (np.array(colors) == "yellow")
+            segments = segments[unselected_segments_mask]
+            colors = np.array(colors)[unselected_segments_mask]
+        self._unselected_hit_collection.set_segments(segments)
+        self._unselected_hit_collection.set_colors(colors)
+        self._unselected_blitmanager.update()
         self.update(1)
     
     def get_arrow(self, i) -> np.array:
-        size = 0.5
+        size = 0.18
         phi = self._tracker.get_arrowangle(self._particles_manager, i)
         posx = np.cos(phi)*(self._tracker.n_layers+2.8)
         posy = np.sin(phi)*(self._tracker.n_layers+2.8)
-        x=(np.array([0,0,-2,2,0,0])*np.cos(phi)-np.array([-3,3,0,0,3,-3])*np.sin(phi))*size
-        y=(np.array([0,0,-2,2,0,0])*np.sin(phi)+np.array([-3,3,0,0,3,-3])*np.cos(phi))*size
+        x=(np.array([0,0,-2,2,0,0])*np.cos(phi+np.pi/2)-np.array([-3,3,0,0,3,-3])*np.sin(phi+np.pi/2))*size
+        y=(np.array([0,0,-2,2,0,0])*np.sin(phi+np.pi/2)+np.array([-3,3,0,0,3,-3])*np.cos(phi+np.pi/2))*size
         arrow = np.append(np.array([x,y]).T,np.zeros((self._granularity-6,2)),axis=0)
         arrow = arrow + [posx,posy]
         return arrow
