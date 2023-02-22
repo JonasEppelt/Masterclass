@@ -660,114 +660,6 @@ class MissingWidget():
         self.final_box = widgets.HBox(children=self.boxes)
         display(self.final_box)
 
-
-class KLMWidget:
-    def __init__(self,data_path,tw=None,always_hit=False,a=35,b=1.2):
-        self.rows=64
-        self.columns=200
-        edge_gap_ratio=2/4
-        self.blocksize=4
-        self.edgesize=self.blocksize*edge_gap_ratio
-        self.gapsize=self.blocksize*(1-edge_gap_ratio)        
-        data = pd.read_hdf(data_path)
-        self.data=[]
-        self.detec=[]
-        for i in range(len(data)):
-            self.data.append([int((np.argmax(data.iloc[i,np.arange(3,6627)].to_numpy())%144)*(self.columns/144)),int(int(np.argmax(data.iloc[i,np.arange(3,6627)].to_numpy())/144)*(self.rows/46))])
-            if (data.iloc[i,6628]==13 or data.iloc[i,6628]==-13 or always_hit):
-                self.detec.append(True)
-            else:
-                self.detec.append(False)
-
-        if tw is None:
-            phi_position=[]
-            theta_position=[]
-            for i in range(len(self.data)):
-                phi_position.append(self.data[i][0])
-                theta_position.append(self.data[i][1])
-        else:
-            phi_position=-tw.get_ecl_position[0]*2+890
-            mask=phi_position>720
-            phi_position[mask]-=720
-            mask=phi_position>720
-            phi_position[mask]-=720
-            mask=phi_position<0
-            phi_position[mask]+=720
-            phi_position = phi_position/5/144*self.columns
-            theta_position=(tw.get_ecl_position[1]-33)/1.45*(self.rows/64)
-
-        self.x_position = np.array(phi_position)*self.blocksize
-        self.y_position = np.array(theta_position)*self.blocksize
-        self.patches=[]
-        self.patchcolors=np.zeros((self.columns*self.rows,4))
-        self.patchcolors[:,2]=1
-
-        for c in range(self.columns):
-            for r in range(self.rows):
-                self.patches.append(Rectangle((c*self.blocksize,r*self.blocksize), self.edgesize, self.edgesize, edgecolor = "blue", facecolor = "gray", linewidth = 1))     
-                intensity=0
-                for i in range(len(self.data)):
-                    if self.detec[i]:
-                        intensity=intensity+np.exp((-(c-self.data[i][0])**2-(r-self.data[i][1])**2)*0.04)
-                self.patchcolors[c*self.rows+r,3]=np.random.normal(loc=intensity, scale=0.13)
-
-        self.patchcolors[:,3] = np.clip(self.patchcolors[:,3],0.1,1)
-        
-        self.out = widgets.Output()
-        with self.out:
-            fig, ax = plt.subplots(figsize=(15,6),constrained_layout=True)
-
-        ax.set_yticklabels([])
-        ax.set_xticklabels([])
-
-        ax.set_ylim(-10,self.rows*self.blocksize+10-self.edgesize)
-        ax.set_xlim(-10,self.columns*self.blocksize+10-self.edgesize)
-        self.patchartist = ax.add_collection(PatchCollection(self.patches,color=self.patchcolors))
-        self.lineartist = ax.add_collection(LineCollection([]))
-        self.patchartist.set_animated(True)
-        self.lineartist.set_animated(True)
-        self.bm = BlitManager(fig.canvas , self.patchartist, self.lineartist)
-        
-    def update(self, change):
-        if self.tabs.selected_index is None:
-            segments=[]
-        else:
-            segments=[[[self.x_position[self.tabs.selected_index]-10*self.blocksize,self.y_position[self.tabs.selected_index]-10*self.blocksize],
-                       [self.x_position[self.tabs.selected_index]-10*self.blocksize,self.y_position[self.tabs.selected_index]+10*self.blocksize],
-                       [self.x_position[self.tabs.selected_index]+10*self.blocksize,self.y_position[self.tabs.selected_index]+10*self.blocksize],
-                       [self.x_position[self.tabs.selected_index]+10*self.blocksize,self.y_position[self.tabs.selected_index]-10*self.blocksize],
-                       [self.x_position[self.tabs.selected_index]-10*self.blocksize,self.y_position[self.tabs.selected_index]-10*self.blocksize]]]
-        
-        self.lineartist.set_segments(segments)
-        self.lineartist.set_color("red")
-        self.bm.update()
-        
-    def show(self):
-
-        self.tabs = widgets.Accordion()
-        self.tabs.observe(self.update, names = "selected_index")
-        self.tickbox = []
-        self.box_list = []
-        self.boxtext=widgets.Text(value = "Wurde hier ein Teilchen erkannt?", disabled = True)
-        for i in range(len(self.data)):
-            self.tabs.set_title(i,f"Teilchen {i}")
-            self.tickbox.append(widgets.RadioButtons(options=['ja', 'nein']))
-            self.tickbox[i].observe(self.update, names = "value")
-            self.box_list.append(widgets.HBox([self.boxtext,self.tickbox[i]]))
-        self.tabs.children = self.box_list
-        self.final_box = widgets.VBox(children=[self.tabs, self.out])
-        with self.out:
-            plt.show()
-        display(self.final_box)
-        self.update(0)
-
-    @property
-    def KLM_hit(self):
-        hit = []
-        for i in range(len(self.tickbox)):
-            hit.append(1 if (self.tickbox[i].value == "ja") else 0)
-        return hit
-
 def visibility_correction(x): #funktion zum anpassen der sichtbarkeit von hits im ecal
     return np.sqrt(abs(x))*2 
 
@@ -924,21 +816,33 @@ class ECL2Widget:
             
         return all_patches,colors
 
-class KLM2Widget():
+class KLMWidget():
     def __init__(self,data_path,always_hit=False,B=0.1):
         self.always_hit=always_hit
         self.data = pd.read_hdf(data_path)
-        self.detec=[]
         self.B=B
-        for i in range(len(self.data)): 
-            if (self.data.iloc[i]["pdg"]==13 or self.data.iloc[i]["pdg"]==-13 or self.always_hit):
-                self.detec.append(True)
-            else:
-                self.detec.append(False)
-
-        self.klmsegments=18
+        self.klmsegments=3#18
         self.segmentwidth=4
         self.klmradius=19
+
+        for i in range(len(self.data)): 
+            if (self.data.iloc[i]["pdg"]==13 or self.data.iloc[i]["pdg"]==-13 or self.always_hit):
+                charge=self.data.iloc[i]["pdg"]/abs(self.data.iloc[i]["pdg"])
+                phi_0=self.data.iloc[i]["phi"]
+                R_0=self.data.iloc[i]["pt"]/self.B
+                r=np.linspace(0,17.5,50)
+                theta=-phi_0+np.arccos(r/(2*R_0))*charge+(charge-1)*np.pi/2
+                phi_2=-np.arctan2(r[48]*np.cos(theta[48])-r[1+48]*np.cos(theta[1+48]),r[48]*np.sin(theta[48])-r[1+48]*np.sin(theta[1+48]))
+                theta2=phi_2-np.arccos(r/(2*R_0))*charge+np.pi*(charge/2-0.5)        
+                trace=np.append(np.array([r*np.cos(theta),r*np.sin(theta)]).T,
+                                np.array([r[-1]*np.cos(theta[-1])+r*np.cos(theta2),r[-1]*np.sin(theta[-1])+r*np.sin(theta2)]).T,axis=0)
+                for l in range(50,80):
+                    R=trace[l,0]**2+trace[l,1]**2
+                    if abs(R-self.klmradius)<0.2:
+                        inner_phi=np.arctan2(trace[l,1],trace[l,0])
+                    elif abs(R-self.klmradius-self.segmentwidth)<0.2:
+                        outer_phi=np.arctan2(trace[l,1],trace[l,0])
+
 
         self.tracker=Tracker(layers = 13, n_segments = 2, ecl_segments=14, k=2,dist=0.2, noise = 0, linewidth = 2, ignore_noise = True,granularity=100,trackercolor="gray")
         self.ecl_collection=LineCollection([16*np.array([np.cos(np.linspace(0,6.3)),np.sin(np.linspace(0,6.3))]).T], color = np.array([1,0,0,0.6]), linewidths = 5)
@@ -956,13 +860,6 @@ class KLM2Widget():
             points[np.arange(75,100)]=np.array([np.linspace(points[74,0],points[0,0],25),np.linspace(points[74,1],points[0,1],25)]).T
             self.segments_coords[i]=points
         self.klm_collection=LineCollection(self.segments_coords, color = np.array([0,0,1,0.9]), linewidths = 3)
-
-        #for i in range(len(self.data)):
-        #    if self.detec[i]:
-        #        r=np.linspace(0,17.5,50)
-        #        theta=-phi_0+np.arccos(r/(2*R_0))*charge+(charge-1)*np.pi/2
-        #        phi_2=-np.arctan2(r[48]*np.cos(theta[48])-r[1+48]*np.cos(theta[1+48]),r[48]*np.sin(theta[48])-r[1+48]*np.sin(theta[1+48]))
-        #        theta2=phi_2-np.arccos(r/(2*R_0))*charge+np.pi*(charge/2-0.5)
 
         self.out = widgets.Output()
         with self.out:
@@ -1014,3 +911,10 @@ class KLM2Widget():
             plt.show()
         display(self.final_box)
         self.update(0)
+
+    @property
+    def KLM_hit(self):
+        hit = []
+        for i in range(len(self.tickbox)):
+            hit.append(1 if (self.tickbox[i].value == "ja") else 0)
+        return hit
