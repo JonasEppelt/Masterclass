@@ -4,7 +4,7 @@ class Tracks:
     '''
     Class representing particle tracks inside the tracking detector.
     '''
-    def __init__(self, pt, phi, charge, B, granularity=100) -> None:
+    def __init__(self, pt, phi, charge, B, granularity=1000) -> None:
         self._pt = pt
         self._phi = phi
         self._charge = charge
@@ -12,15 +12,21 @@ class Tracks:
         self._granularity = granularity
     
     def get_trace_array(self):
-        track_thetas = np.linspace(-np.pi/2+self.phi,np.pi/2+self.phi, self._granularity) # angle interval to draw the half circle
-        track_trace_x = abs(self.track_radius)*np.sin(track_thetas) + self.track_center_x
-        track_trace_y = abs(self.track_radius)*np.cos(track_thetas) + self.track_center_y
+        if self._charge != 0 and self._B != 0:
+            track_thetas = np.linspace(-np.pi/2+self.phi,np.pi/2+self.phi, self._granularity) # angle interval to draw the half circle
+            track_trace_x = abs(self.track_radius)*np.sin(track_thetas) + self.track_center_x
+            track_trace_y = abs(self.track_radius)*np.cos(track_thetas) + self.track_center_y
+        else:
+            track_trace_x =  np.linspace(0, 1000*np.sin(self.phi), self._granularity)
+            track_trace_y = np.linspace(0,1000*np.cos(self._phi), self._granularity)
+
         return np.array([track_trace_x, track_trace_y])
-    
-        
+
     @property
     def track_radius(self):
-        return self._pt / self._B
+        if self._B != 0:
+            return self._pt / self._B
+        return 1e16
 
     @property
     def track_center_x(self):

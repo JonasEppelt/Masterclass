@@ -32,7 +32,8 @@ class BlitManager:
             fig.draw_artist(self._artist2)
 
     def update(self) -> None:
-        fig = self._canvas.figure
+        cv = self._canvas
+        fig = cv.figure
         if self._background is None:
             self.on_draw(None)
         else:

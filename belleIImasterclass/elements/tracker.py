@@ -47,11 +47,11 @@ class Tracker:
 
     def get_hits(self, particle, selected=True):
         tracker_selected = "tracker_" if selected else ""
-        particle_radius = (particle[f"{tracker_selected}pt"] /self._B_field).astype(float)
+        particle_radius = (particle[f"{tracker_selected}pt"] /abs(self._B_field)).astype(float)
         if particle_radius <= 0.0:
             return self._segment_df.radius != self._segment_df.radius
-    
-        theta=particle[f"{tracker_selected}charge"]*np.pi/2-particle[f"{tracker_selected}phi"]+np.arccos(self._segment_df.radius/(2*particle_radius))*particle[f"{tracker_selected}charge"]-np.pi/2
+        relative_charge = particle[f"{tracker_selected}charge"]*(self._B_field/abs(self._B_field))
+        theta=relative_charge*np.pi/2-particle[f"{tracker_selected}phi"]+np.arccos(self._segment_df.radius/(2*particle_radius))*relative_charge-np.pi/2
 
         mask = theta < 0
         theta[mask] += 2*np.pi
@@ -59,8 +59,10 @@ class Tracker:
         theta[mask] += 2*np.pi
         mask = theta > 2*np.pi
         theta[mask] -= 2*np.pi
-
-        return (theta > self._segment_df.begin) & (theta < self._segment_df.end) & (self._segment_df.radius <= abs(2*particle_radius))
+        if particle[f"{tracker_selected}charge"] == 0:
+            return np.zeros(len(theta), dtype=int)
+        else:
+            return (theta > self._segment_df.begin) & (theta < self._segment_df.end) & (self._segment_df.radius <= abs(2*particle_radius))
 
     def get_hit_segments(self, particles: ParticlesManager, particle_index: int = None, selected = True) -> Tuple[np.array, np.array]:
         hit_segments = np.empty((0,self._granularity, 2))
