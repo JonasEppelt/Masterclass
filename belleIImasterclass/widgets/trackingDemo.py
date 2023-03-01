@@ -8,9 +8,9 @@ from matplotlib.collections import LineCollection
 import pandas as pd
 
 class TrackingDemonstratorWidget:
-    def __init__(self, granularity = 100, continuous_update = True):
+    def __init__(self, granularity = 100, continuous_update = True, noise_ratio = 0.):
         self._granularity = granularity
-        self._tracker = Tracker(granularity=granularity, noise_ratio=0)
+        self._tracker = Tracker(granularity=granularity, noise_ratio=noise_ratio)
         self._continuous_update = continuous_update
         self.pt_slider = FloatSlider(
             value=3, 
@@ -94,7 +94,7 @@ class TrackingDemonstratorWidget:
             charge = 1
         else:
             charge = 0
-        #self._tracker._B_field = B
+        self._tracker._B_field = B
         trace = Tracks(pt=pt, phi = phi, charge=charge, B = B, granularity=self._granularity)
         df = pd.DataFrame([[charge, pt, phi]], columns = ["charge", "pt", "phi"])
         segments, colors = self._tracker.get_hit_segments(df, 0, False, )
