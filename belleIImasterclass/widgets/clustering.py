@@ -8,11 +8,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from copy import deepcopy
 from matplotlib.collections import PatchCollection, LineCollection
+from matplotlib.transforms import Affine2D
 
 class ECLWidget:
-    def __init__(self,particles_manager: ParticlesManager, noise_rate = 0.05) -> None:
+    def __init__(self,particles_manager: ParticlesManager, noise_ratio = 0.05) -> None:
         self._particles_manager = particles_manager
-        self._noise_rate = noise_rate
+        self._noise_ratio = noise_ratio
         self._ecal = ECal()        
         self._selected_crystalls = [np.array([], dtype = int)]*self._particles_manager.n_particles
 
@@ -22,19 +23,31 @@ class ECLWidget:
         self._crystall_colors[:,0] = 1
         for n_particle in range(len(self._particles_manager._df)):
             self._crystall_colors[:,3] += self._particles_manager.get_crystall_content(n_particle)
-        self.noise = np.clip(np.random.normal(0,self._noise_rate, self._ecal._n_patches),0,10000)
+        self.noise = np.clip(np.random.normal(0,1, self._ecal._n_patches),0,10000)[np.random.randint(0,1,self._ecal._n_patches)]
 
         self._crystall_colors[:,3] += self.noise
         
         self._crystall_content = deepcopy(self._crystall_colors[:,3])
         self._crystall_colors[:,3] = np.clip(2*np.sqrt(self._crystall_colors[:,3]),0,1)
-        self._crystall_colors[np.where(self._crystall_colors[:,3]<=0.22),:]=[0,0,0,0.25]
+        self._crystall_colors[np.where(self._crystall_colors[:,3]<=0.01),:]=[0,0,0,0.1]
 
         self._out = Output()
+        
+        self._energy_labels = []
+        box_list = []
+        for i in range(self._particles_manager.n_particles):
+            self._energy_labels.append(Text(description = "Gesamte Energie der ausgewählten Kristalle in GeV:", value = "0", disabled=True))
+            box_list.append(HBox([self._energy_labels[i]]))
+        
+        self._particle_selector = Accordion(children=box_list,  titles = [f"Teilchen {str(i)}" for i in list(range(1,self._particles_manager.n_particles+1))], )
+        self._particle_selector.observe(self.change_particle, names="selected_index")
+        self._final_box = VBox(children=[self._particle_selector, self._out])
+    
+    def show(self) -> None:
         with self._out:
-            self._fig, self._ax = plt.subplots(figsize = (14, 14*60/89), constrained_layout = True)
-        self._ax.set_ylim(-260, 340)
-        self._ax.set_xlim(-445,445)
+            self._fig, self._ax = plt.subplots(figsize = (14, 10*60/89), constrained_layout = True)
+        self._ax.set_xlim(-475, 450)
+        self._ax.set_ylim(-300, 350)
         self._ax.set_yticklabels([])
         self._ax.set_xticklabels([])
 
@@ -48,17 +61,6 @@ class ECLWidget:
 
         self._lasso = LassoSelector(self._ax, onselect = self.on_select)
         
-        self._energy_labels = []
-        box_list = []
-        for i in range(self._particles_manager.n_particles):
-            self._energy_labels.append(Text(description = "Gesamte Energie der ausgewählten Kristalle in GeV:", value = "0", disabled=True))
-            box_list.append(HBox([self._energy_labels[i]]))
-        
-        self._particle_selector = Accordion(children=box_list,  titles = [f"Teilchen {str(i)}" for i in list(range(1,self._particles_manager.n_particles+1))], )
-        self._particle_selector.observe(self.change_particle, names="selected_index")
-        self._final_box = VBox(children=[self._particle_selector, self._out])
-    
-    def show(self) -> None:
         with self._out:
             plt.show()
         display(self._final_box)
