@@ -17,13 +17,14 @@ class ECal:
         self._barrel_center = np.array([0,-100])
         barrel_coordinates, barrel_angles, barrel_offsets = self.get_barrel_patches
 
-        self._forward_center = np.array([-200,200])
+        self._forward_center = np.array([-300,200])
         self._forward_number_of_rings = 13
         self._forward_rings_sizes = np.array([48,48,64,64,64,96,96,96,96,96,96,144,144])
         self._forward_ring_radiuses = np.linspace(49.62,125.82,13)
         forward_coordinates, forward_angles, forward_offsets = self.get_caps_patches(self._forward_center, self._forward_number_of_rings, self._forward_rings_sizes, self._forward_ring_radiuses, )
 
-        self._backward_center = np.array([200,200])
+
+        self._backward_center = np.array([300,200])
         self._backward_number_of_rings = 10
         self._backward_rings_sizes =  np.array([64,64,64,96,96,96,96,96,144,144])
         self._backward_ring_radiuses = np.linspace(58.51,129.2,10)
@@ -61,7 +62,7 @@ class ECal:
         angles = np.empty([0])
         offsets = np.empty([2,0])
         for n_ring in range(number_of_rings):
-            phi = np.linspace(0,2*np.pi, ring_sizes[n_ring], endpoint=False)
+            phi = np.linspace(0,2*np.pi, ring_sizes[n_ring], endpoint=False)  #- np.pi/2
             angles = np.append(angles, phi)
             coordinates = np.append(coordinates, np.full((ring_sizes[n_ring], 2), cap_center).T+ring_radiuses[n_ring]*np.array([np.cos(phi), np.sin(phi)]), axis = 1)
             offsets = np.append(offsets, -np.sqrt(2)*self._crystal_size*np.array([np.sin(np.pi/4-phi), np.cos(np.pi/4-phi)])/2, axis = 1)
