@@ -18,17 +18,18 @@ class ECLWidget:
         self._selected_crystalls = [np.array([], dtype = int)]*self._particles_manager.n_particles
 
         self._sel_particle = None
-
+        self._center_crystals = np.zeros(len(self._particles_manager._df),dtype=int)
         self._crystall_colors = np.zeros((self._ecal._n_patches,4))
         self._crystall_colors[:,0] = 1
         for n_particle in range(len(self._particles_manager._df)):
             self._crystall_colors[:,3] += self._particles_manager.get_crystall_content(n_particle)
+            self._center_crystals[n_particle] = np.argmax(self._particles_manager.get_crystall_content(n_particle))
         self.noise = np.clip(np.random.normal(0,1, self._ecal._n_patches),0,10000)[np.random.randint(0,1,self._ecal._n_patches)]
 
         self._crystall_colors[:,3] += self.noise
         
         self._crystall_content = deepcopy(self._crystall_colors[:,3])
-        self._crystall_colors[:,3] = np.clip(2*np.sqrt(self._crystall_colors[:,3]),0,1)
+        self._crystall_colors[:,3] = np.clip(1.5*np.sqrt(self._crystall_colors[:,3]),0,1)
         self._crystall_colors[np.where(self._crystall_colors[:,3]<=0.01),:]=[0,0,0,0.1]
 
         self._out = Output()
@@ -64,6 +65,7 @@ class ECLWidget:
         with self._out:
             plt.show()
         display(self._final_box)
+        self._sel_particle = 0
         self.on_select()
 
     def change_particle(self, change) -> None:
@@ -75,14 +77,15 @@ class ECLWidget:
     
     def on_select(self, verts = None) -> None:
         if (verts is not None) and (self._sel_particle is not None):
-            print("verts")
             path = Path(verts)
             self._selected_crystalls[self._sel_particle] = np.nonzero(path.contains_points(self._ecal._patch_coordinates.T))[0]
-            energy = np.sum(self._crystall_content[abs(self._crystall_content[self._selected_crystalls[self._sel_particle]])])
+            energy = np.sum(abs(self._crystall_content[self._selected_crystalls[self._sel_particle]]))
             self._particles_manager.energy_measurement(self._sel_particle, energy)
-            self._energy_labels[self._sel_particle].value = str(round(self.energies[self._sel_particle], 5))
+            self._energy_labels[self._sel_particle].value = str(round(energy, 5))
+
         edge_colors = np.clip(self._crystall_colors,0,1)
         for n in range(self._particles_manager.n_particles):
             edge_colors[self._selected_crystalls[n]] = [0,0,1,0.5] if n==self._sel_particle else [1,1,0,0.3]
+            edge_colors[self._center_crystals[n]] = [0,0,0,1] if n==self._sel_particle else edge_colors[self._center_crystals[n]]
         self._crystall_artist.set_edgecolors(edge_colors)
         self._blit_manager.update()
