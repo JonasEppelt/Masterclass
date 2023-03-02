@@ -44,7 +44,7 @@ class ECal:
         ) for n in range(self._n_patches)]
     
     @property
-    def get_barrel_patches(self) -> list[list[float]]:
+    def get_barrel_patches(self):
         x_positions = np.linspace(-np.pi*139.1, np.pi*139.1, self._barrel_columns)
         y_positions = np.linspace(-153.6,153.6, 46)
         coordinates = np.empty([2,0])
@@ -56,7 +56,7 @@ class ECal:
             offsets = np.append(offsets, -np.ones([2,self._barrel_columns])*self._crystal_size, axis = 1)
         return coordinates, angles, offsets
     
-    def get_caps_patches(self, cap_center, number_of_rings, ring_sizes, ring_radiuses) -> list[list[float]]:
+    def get_caps_patches(self, cap_center, number_of_rings, ring_sizes, ring_radiuses):
 
         coordinates = np.empty([2,0])
         angles = np.empty([0])

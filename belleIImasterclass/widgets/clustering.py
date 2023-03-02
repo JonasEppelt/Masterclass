@@ -9,6 +9,7 @@ import numpy as np
 from copy import deepcopy
 from matplotlib.collections import PatchCollection, LineCollection
 from matplotlib.transforms import Affine2D
+from matplotlib.patches import Rectangle
 
 class ECLWidget:
     def __init__(self,particles_manager: ParticlesManager, noise_ratio = 0.05) -> None:
@@ -22,14 +23,14 @@ class ECLWidget:
         self._crystall_colors = np.zeros((self._ecal._n_patches,4))
         self._crystall_colors[:,0] = 1
         for n_particle in range(len(self._particles_manager._df)):
-            self._crystall_colors[:,3] += self._particles_manager.get_crystall_content(n_particle)
+            self._crystall_colors[:,3] = self._crystall_colors[:,3] + self._particles_manager.get_crystall_content(n_particle)
             self._center_crystals[n_particle] = np.argmax(self._particles_manager.get_crystall_content(n_particle))
         self.noise = np.clip(np.random.normal(0,1, self._ecal._n_patches),0,10000)[np.random.randint(0,1,self._ecal._n_patches)]
 
         self._crystall_colors[:,3] += self.noise
         
         self._crystall_content = deepcopy(self._crystall_colors[:,3])
-        self._crystall_colors[:,3] = np.clip(1.5*np.sqrt(self._crystall_colors[:,3]),0,1)
+        self._crystall_colors[:,3] = np.clip(1*np.sqrt(self._crystall_colors[:,3]),0,1)
         self._crystall_colors[np.where(self._crystall_colors[:,3]<=0.01),:]=[0,0,0,0.1]
 
         self._out = Output()
@@ -89,3 +90,38 @@ class ECLWidget:
             edge_colors[self._center_crystals[n]] = [0,0,0,1] if n==self._sel_particle else edge_colors[self._center_crystals[n]]
         self._crystall_artist.set_edgecolors(edge_colors)
         self._blit_manager.update()
+        self.make_patches(self._sel_particle)
+
+    def make_patches(self,index,rand=20):
+        selection_corners=np.zeros((2,5))
+        midpoint=np.zeros((2))
+        selection_size=1
+        ptchcrds=self._ecal._patch_coordinates[:,self._selected_crystalls[index]]
+        if len(ptchcrds[0])>0:
+                midpoint[0]=(np.amax(ptchcrds[0])-np.amax(-ptchcrds[0]))/2
+                midpoint[1]=(np.amax(ptchcrds[1])-np.amax(-ptchcrds[1]))/2           
+                selection_size=np.amax(ptchcrds[0])+np.amax(-ptchcrds[0]) 
+                if selection_size < (np.amax(ptchcrds[1])+np.amax(-ptchcrds[1])):  
+                    selection_size = np.amax(ptchcrds[1])+np.amax(-ptchcrds[1])
+                selection_corners[0,0]=midpoint[0]-selection_size/2-rand
+                selection_corners[1,0]=midpoint[1]-selection_size/2-rand
+                selection_corners[0,1]=midpoint[0]+selection_size/2+rand
+                selection_corners[1,1]=midpoint[1]-selection_size/2-rand
+                selection_corners[0,2]=midpoint[0]+selection_size/2+rand
+                selection_corners[1,2]=midpoint[1]+selection_size/2+rand
+                selection_corners[0,3]=midpoint[0]-selection_size/2-rand
+                selection_corners[1,3]=midpoint[1]+selection_size/2+rand
+                selection_corners[0,4]=selection_corners[0,0]
+                selection_corners[1,4]=selection_corners[1,0]    
+
+        path = Path(selection_corners.T)
+        patchindices=np.nonzero(path.contains_points(self._ecal._patch_coordinates.T))[0]
+        patches=[]
+        for l in range(len(patchindices)):
+            patches.append(Rectangle((self._ecal._patch_coordinates[:,patchindices[l]]+self._ecal._patch_offsets[:,patchindices[l]]-midpoint)*(50/(selection_size+2*rand)),
+                                     width=self._ecal._crystal_size*(50/(selection_size+2*rand)),height=self._ecal._crystal_size*(50/(selection_size+2*rand)),
+                                     angle=self._ecal._patch_angles[patchindices[l]]*180/np.pi,linewidth=20))
+        colors=np.clip(self._crystall_colors[patchindices],0,1)
+        self._particles_manager.ecal_patches(index,patches,colors)
+
+
