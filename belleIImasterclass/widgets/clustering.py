@@ -30,7 +30,7 @@ class ECLWidget:
         self._crystall_colors[:,3] += self.noise
         
         self._crystall_content = deepcopy(self._crystall_colors[:,3])
-        self._crystall_colors[:,3] = np.clip(1*np.sqrt(self._crystall_colors[:,3]),0,1)
+        self._crystall_colors[:,3] = np.clip(1.5*np.sqrt(self._crystall_colors[:,3]),0,1)
         self._crystall_colors[np.where(self._crystall_colors[:,3]<=0.01),:]=[0,0,0,0.1]
 
         self._out = Output()
@@ -90,7 +90,8 @@ class ECLWidget:
             edge_colors[self._center_crystals[n]] = [0,0,0,1] if n==self._sel_particle else edge_colors[self._center_crystals[n]]
         self._crystall_artist.set_edgecolors(edge_colors)
         self._blit_manager.update()
-        self.make_patches(self._sel_particle)
+        if self._sel_particle is not None:
+            self.make_patches(self._sel_particle)
 
     def make_patches(self,index,rand=20):
         selection_corners=np.zeros((2,5))
