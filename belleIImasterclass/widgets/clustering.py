@@ -41,7 +41,7 @@ class ECLWidget:
             self._energy_labels.append(Text(description = "Gesamte Energie der ausgewählten Kristalle in GeV:", value = "0", disabled=True))
             box_list.append(HBox([self._energy_labels[i]]))
         
-        self._particle_selector = Accordion(children=box_list,  titles = [f"Teilchen {str(i)}" for i in list(range(1,self._particles_manager.n_particles+1))], )
+        self._particle_selector = Accordion(children=box_list,  titles = [f"Teilchen {str(i)}" for i in list(range(self._particles_manager.n_particles))], )
         self._particle_selector.observe(self.change_particle, names="selected_index")
         self._final_box = VBox(children=[self._particle_selector, self._out])
     
