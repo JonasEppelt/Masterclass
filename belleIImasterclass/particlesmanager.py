@@ -14,6 +14,7 @@ class ParticlesManager:
         self._df["tracker_phi"] = 0
         self._df["tracker_charge"] = 0
         self._df["ecl_energy"] = 0
+        self._df["klm_detect"] = False
         self._df["patches"] = [[]]*len(self._df)
         self._df["colors"] = [np.array([])]*len(self._df)
     
@@ -38,6 +39,9 @@ class ParticlesManager:
 
     def energy_measurement(self, index, energy) -> None:
         self._df.at[index, "ecl_energy"] = energy
+
+    def Klong_measurement(self, index, hit) -> None:
+        self._df.at[index, "klm_detect"] = hit
 
     def ecal_patches(self, index, patches, colors) -> None:
         self._df.at[index,"patches"]=patches

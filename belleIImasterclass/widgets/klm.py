@@ -17,31 +17,19 @@ from matplotlib.collections import LineCollection
 
 
 class KLMWidget():
-    def __init__(self,particles_manager: ParticlesManager,always_hit=False,B=0.1):
+    def __init__(self,particles_manager: ParticlesManager,always_hit=False,true_particles=False,B=0.05):
         self.always_hit=always_hit
         self._particles_manager = particles_manager
         self.B=B
         self.klmsegments=18
         self.segmentwidth=4
         self.klmradius=19
+        self.truepart=true_particles
 
-        for i in range(self._particles_manager.n_particles): 
-            if (self._particles_manager._df.iloc[i]["pdg"]==13 or self._particles_manager._df.iloc[i]["pdg"]==-13 or self.always_hit):
-                charge=self._particles_manager._df.iloc[i]["charge"]
-                phi_0=self._particles_manager._df.iloc[i]["phi"]
-                R_0=self._particles_manager._df.iloc[i]["pt"]/self.B
-                trace = self.make_trace(charge,phi_0,R_0)
-                for l in range(50,80):
-                    R=np.sqrt(trace[l,0]**2+trace[l,1]**2)
-                    if abs(R-self.klmradius)<0.2:
-                        inner_phi=np.arctan2(trace[l,1],trace[l,0])
-                    elif abs(R-self.klmradius-self.segmentwidth)<0.2:
-                        outer_phi=np.arctan2(trace[l,1],trace[l,0])
-
-
-        #self.tracker=Tracker(layers = 13, n_segments = 2, ecl_segments=14, k=2,dist=0.2, noise = 0, linewidth = 2, ignore_noise = True,granularity=100,trackercolor="gray")
         self.make_klm_collection()
-
+        self.make_hit_collection()
+        self.make_tracker_ecl_collection()
+        
         self.out = widgets.Output()
         with self.out:
             fig, ax = plt.subplots(figsize=(7,7),constrained_layout=True)
@@ -51,14 +39,22 @@ class KLMWidget():
         ax.set_xlim(-28,28)
         self.lineartist = ax.add_collection(LineCollection([]))
         self.lineartist.set_animated(True)
-        #ax.add_collection(self.tracker.get_tracker_collection())
-
-        self.ecl_collection=LineCollection([16*np.array([np.cos(np.linspace(0,6.3)),np.sin(np.linspace(0,6.3))]).T], color = np.array([1,0,0,0.6]), linewidths = 5)
+        ax.add_collection(self.tracker_collection)
         ax.add_collection(self.ecl_collection)
-
         ax.add_collection(self.klm_collection)
+        ax.add_collection(self.hit_collection)
         self.bm = BlitManager(fig.canvas ,self.lineartist)
-
+    
+    def make_tracker_ecl_collection(self):
+        self.ecl_collection=LineCollection([16*np.array([np.cos(np.linspace(0,6.3)),np.sin(np.linspace(0,6.3))]).T], color = np.array([1,0,0,0.6]), linewidths = 5)
+        lines=[]
+        for l in range(1,14+1):
+            len_segment = 2*np.pi/(3+2*l) # length of segment in layer l in rad
+            offset = l%2
+            for i in range(14+l*2):
+                phi=np.linspace(len_segment*i+0.1/(l+1)+offset,len_segment*(i+1)-0.1/(l+1)+offset)
+                lines.append(l*np.array([np.cos(phi),np.sin(phi)]).T)
+        self.tracker_collection=LineCollection(lines, color = "gray", linewidths = 6)
 
     def make_klm_collection(self):
         self.segments_coords=np.zeros((self.klmsegments,100,2))
@@ -68,12 +64,36 @@ class KLMWidget():
             self.segments_angle[i]=np.array([i*2*np.pi/self.klmsegments+0.015,(i+1)*2*np.pi/self.klmsegments-0.015])
             t = np.linspace(self.segments_angle[i,0],self.segments_angle[i,1], 25)   
             t_rev = np.linspace(self.segments_angle[i,1],self.segments_angle[i,0], 25) 
-            points[np.arange(0,25)]=self.klmradius*np.array([np.sin(t),np.cos(t)]).T
-            points[np.arange(50,75)]=(self.segmentwidth+self.klmradius)*np.array([np.sin(t_rev),np.cos(t_rev)]).T
+            points[np.arange(0,25)]=self.klmradius*np.array([np.cos(t),np.sin(t)]).T
+            points[np.arange(50,75)]=(self.segmentwidth+self.klmradius)*np.array([np.cos(t_rev),np.sin(t_rev)]).T
             points[np.arange(25,50)]=np.array([np.linspace(points[24,0],points[50,0],25),np.linspace(points[24,1],points[50,1],25)]).T
             points[np.arange(75,100)]=np.array([np.linspace(points[74,0],points[0,0],25),np.linspace(points[74,1],points[0,1],25)]).T
             self.segments_coords[i]=points
-        self.klm_collection=LineCollection(self.segments_coords, color = np.array([0,0,1,0.9]), linewidths = 3)
+        self.klm_collection=LineCollection(self.segments_coords, color = np.array([0,0,1,0.9]), linewidths = 3.6)
+
+    def make_hit_collection(self):
+        self.hits=np.full((self.klmsegments), False)
+        for i in range(self._particles_manager.n_particles): 
+            if (self._particles_manager._df.iloc[i]["pdg"]==13 or self._particles_manager._df.iloc[i]["pdg"]==-13 or self.always_hit):
+                charge=self._particles_manager._df.iloc[i]["charge"]
+                phi_0=self._particles_manager._df.iloc[i]["phi"]
+                R_0=self._particles_manager._df.iloc[i]["pt"]/self.B
+                trace = self.make_trace(charge,phi_0,R_0)
+                inner_phi=0
+                outer_phi=0
+                for l in range(0,100):
+                    R=np.sqrt(trace[l,0]**2+trace[l,1]**2)
+                    if abs(R-self.klmradius)<1:
+                        inner_phi=np.arctan2(trace[l,1],trace[l,0])
+                    elif abs(R-self.klmradius-self.segmentwidth)<1:
+                        outer_phi=np.arctan2(trace[l,1],trace[l,0])
+                    if inner_phi<0: 
+                        inner_phi=inner_phi+2*np.pi
+                    if outer_phi<0: 
+                        outer_phi=outer_phi+2*np.pi
+                self.hits=np.logical_or(self.hits,(np.logical_and(self.segments_angle[:,0]<inner_phi,self.segments_angle[:,1]>inner_phi)))
+                self.hits=np.logical_or(self.hits,(np.logical_and(self.segments_angle[:,0]<outer_phi,self.segments_angle[:,1]>outer_phi)))
+        self.hit_collection=LineCollection(self.segments_coords[self.hits], color = np.array([1,0,0,0.9]), linewidths = 2)
 
     def make_trace(self,charge,phi_0,R_0):
         magnetradius=17.5
@@ -95,14 +115,15 @@ class KLMWidget():
     def update(self, change):
         self.index=self.tabs.selected_index if self.tabs.selected_index is not None else self.index
 
-        charge=self._particles_manager._df.iloc[self.index]["tracker_charge"]
-        phi_0=self._particles_manager._df.iloc[self.index]["tracker_phi"]
-        R_0=self._particles_manager._df.iloc[self.index]["tracker_pt"]/self.B
+        charge=self._particles_manager._df.iloc[self.index]["tracker_charge"] if self.truepart==False else self._particles_manager._df.iloc[self.index]["charge"]
+        phi_0=self._particles_manager._df.iloc[self.index]["tracker_phi"] if self.truepart==False else self._particles_manager._df.iloc[self.index]["phi"]
+        R_0=self._particles_manager._df.iloc[self.index]["tracker_pt"]/self.B if self.truepart==False else self._particles_manager._df.iloc[self.index]["pt"]/self.B
 
         trace = self.make_trace(charge,phi_0,R_0)
         self.lineartist.set_segments([trace])
         self.lineartist.set_colors(["red"])
         self.bm.update()        
+        self._particles_manager.Klong_measurement(self.index, (self.tickbox[self.index].value == "ja"))
 
     def show(self):
 
@@ -122,10 +143,3 @@ class KLMWidget():
             plt.show()
         display(self.final_box)
         self.update(0)
-
-    @property
-    def KLM_hit(self):
-        hit = []
-        for i in range(len(self.tickbox)):
-            hit.append(1 if (self.tickbox[i].value == "ja") else 0)
-        return hit
