@@ -25,8 +25,10 @@ class ECLWidget:
         for n_particle in range(len(self._particles_manager._df)):
             self._crystall_colors[:,3] = self._crystall_colors[:,3] + self._particles_manager.get_crystall_content(n_particle)
             self._center_crystals[n_particle] = np.argmax(self._particles_manager.get_crystall_content(n_particle))
-        self.noise = np.clip(np.random.normal(0,1, self._ecal._n_patches),0,10000)[np.random.randint(0,1,self._ecal._n_patches)]
 
+        noise_std=0.04
+        noise_mean=0
+        self.noise = np.clip(np.random.normal(noise_mean,noise_std, self._ecal._n_patches),0,1)*np.random.choice(a=[1, 0], size=(self._ecal._n_patches), p=[self._noise_ratio, 1-self._noise_ratio])
         self._crystall_colors[:,3] += self.noise
         
         self._crystall_content = deepcopy(self._crystall_colors[:,3])
