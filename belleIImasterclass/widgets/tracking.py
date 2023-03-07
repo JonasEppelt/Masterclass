@@ -23,7 +23,7 @@ class TrackingWidget:
         for i in range(len(self._particles_manager)):
             self._arrows.append(self.get_arrow(i))
 
-        self._widget_df = pd.DataFrame(index = particles_manager.index)
+        self._widget_df = pd.DataFrame(index = np.arange(particles_manager.n_particles))
         self._continuous_update = continuous_update
         self._widget_df["hits_counter_widget"] = self.generate_widget_per_particle(Label, value="0 hits & 0 misses")
         self._widget_df["pt_slider_widget"] = self.generate_widget_per_particle(FloatSlider, 
