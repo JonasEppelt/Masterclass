@@ -67,18 +67,13 @@ class Tracker:
     def get_hit_segments(self, particles: ParticlesManager, particle_index: int = None, selected = True) -> Tuple[np.array, np.array]:
         hit_segments = np.empty((0,self._granularity, 2))
         colors = []
-        if particle_index != None: #if index is given, only check this particle
-            hits = self.get_hits(particles.loc[particle_index,:], selected=selected)
-            hit_segments = np.append(hit_segments, self.tracker_lines[hits,:,:], axis = 0)
-            colors = ["blue"]*hits.sum()
-        else:
-            for i in range(len(particles)):
-                hits = self.get_hits(particles.loc[i,:], selected=selected)
-                hit_segments = np.append(hit_segments, self.tracker_lines[hits], axis = 0)
-                if(i == particle_index):
-                    colors.extend(["blue"]*hits.sum())
-                else:
-                    colors.extend(["yellow"]*hits.sum())
+        for i in range(len(particles)):
+            hits = self.get_hits(particles.loc[i,:], selected=selected)
+            hit_segments = np.append(hit_segments, self.tracker_lines[hits], axis = 0)
+            if(i == particle_index):
+                colors.extend(["blue"]*hits.sum())
+            else:
+                colors.extend(["yellow"]*hits.sum())
         return hit_segments, colors
 
     def get_arrowangle(self,particles: ParticlesManager, particle_index: int):                                          #returns angle for the arrow (angle of the outer most segment)
