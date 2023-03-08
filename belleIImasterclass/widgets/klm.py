@@ -25,7 +25,8 @@ class KLMWidget():
         self.segmentwidth=4
         self.klmradius=19
         self.truepart=true_particles
-
+        self.index = None
+        
         self.make_klm_collection()
         self.make_hit_collection()
         self.make_tracker_ecl_collection()
