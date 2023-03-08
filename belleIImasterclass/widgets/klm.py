@@ -126,18 +126,17 @@ class KLMWidget():
         self._particles_manager.Klong_measurement(self.index, (self.tickbox[self.index].value == "ja"))
 
     def show(self):
-
-        self.tabs = widgets.Accordion()
-        self.tabs.observe(self.update, names = "selected_index")
         self.tickbox = []
         self.box_list = []
         self.boxtext=widgets.Text(value = "Wurde hier ein Teilchen erkannt?", disabled = True)
         for i in range(self._particles_manager.n_particles): 
-            self.tabs.set_title(i,f"Teilchen {i}")
             self.tickbox.append(widgets.RadioButtons(options=['ja', 'nein']))
             self.tickbox[i].observe(self.update, names = "value")
             self.box_list.append(widgets.HBox([self.boxtext,self.tickbox[i]]))
-        self.tabs.children = self.box_list
+        self.tabs = widgets.Accordion(
+            titles = [f"Teilchen {str(i)}" for i in range(self._particles_manager.n_particles)],
+            children=self.box_list,)
+        self.tabs.observe(self.update, names = "selected_index")
         self.final_box = widgets.VBox(children=[self.tabs, self.out])
         with self.out:
             plt.show()
