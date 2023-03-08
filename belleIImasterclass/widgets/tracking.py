@@ -23,7 +23,7 @@ class TrackingWidget:
         for i in range(len(self._particles_manager)):
             self._arrows.append(self.get_arrow(i))
 
-        self._widget_df = pd.DataFrame(index = particles_manager.index)
+        self._widget_df = pd.DataFrame(index = np.arange(particles_manager.n_particles))
         self._continuous_update = continuous_update
         self._widget_df["hits_counter_widget"] = self.generate_widget_per_particle(Label, value="0 hits & 0 misses")
         self._widget_df["pt_slider_widget"] = self.generate_widget_per_particle(FloatSlider, 
@@ -49,7 +49,7 @@ class TrackingWidget:
             VBox([x["hits_counter_widget"], x["pt_slider_widget"], x["pt_fineslider_widget"], 
                 x["phi_slider_widget"], x["phi_fineslider_widget"], x["charge_widget"]]),1)
         
-        self.particle_selector = Accordion(children=self._widget_df["widget_box"].to_list(), titles = [f"Teilchen {str(i)}" for i in list(range(1,self.n_particles+1))])
+        self.particle_selector = Accordion(children=self._widget_df["widget_box"].to_list(), titles = [f"Teilchen {str(i)}" for i in list(range(self.n_particles))])
         self.particle_selector.observe(self.change_particle, names = "selected_index")
         self._current_particle_index = 0
         
@@ -97,8 +97,6 @@ class TrackingWidget:
             colors = ["red"]*len(colors)
             ax.add_collection(LineCollection(segments, color = colors, linewidth = 2.5))
         self._selection_blitmanager = BlitManager(self._fig.canvas, self._selection_hit_collection)
-        self._unselected_segments = np.array([])
-        self._unselected_colors = np.array([])
         with self._out:
             plt.show()
         self._fig.canvas.draw()
@@ -114,32 +112,21 @@ class TrackingWidget:
             self._particles_manager.tracker_measurement(index = self._current_particle_index, pt = pt, phi = phi, charge = charge)
         df = self._particles_manager._df
         segments, colors = self._tracker.get_hit_segments(df, self._current_particle_index)
-        print("hits", segments.shape, colors.shape)
+        print(self._current_particle_index)
         if self._current_particle_index != None:
             trace = Tracks(pt = pt, phi = phi, charge = charge, B = self._tracker._B_field, granularity = self._granularity)
             trace_segments = trace.get_trace_array()
-            print("trace", trace_segments.shape)
             segments = np.append(segments, [trace_segments.T], axis = 0)
             colors = np.append(colors, ["blue"])
             arrow_segments = self._arrows[self._current_particle_index]
             segments = np.append(segments, [arrow_segments], axis = 0)
             colors = np.append(colors, ["green"])
-        print("selected", segments.shape, colors.shape)
-        if len(self._unselected_colors) > 0:
-            segments = np.append(segments, self._unselected_segments, axis = 0)
-            colors = np.append(colors, self._unselected_colors)
-        print("with unselected", segments.shape, colors.shape)
         self._selection_hit_collection.set_segments(segments)
         self._selection_hit_collection.set_colors(colors)
         self._selection_blitmanager.update()
 
     def change_particle(self, update):
         self._current_particle_index = self.particle_selector.selected_index
-        segments, colors = self._tracker.get_hit_segments(self._particles_manager._df)
-        if len(colors) > 0:
-            unselected_segments_mask = (np.array(colors) == "yellow")
-            self._unselected_segments = segments[unselected_segments_mask]
-            self._unselected_colors = np.array(colors)[unselected_segments_mask]
         self.update(1)
     
     def get_arrow(self, i) -> np.array:
