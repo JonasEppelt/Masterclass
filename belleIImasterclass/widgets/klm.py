@@ -26,7 +26,7 @@ class KLMWidget():
         self.klmradius=19
         self.truepart=true_particles
         self.index = None
-        
+
         self.make_klm_collection()
         self.make_hit_collection()
         self.make_tracker_ecl_collection()
@@ -115,16 +115,16 @@ class KLMWidget():
 
     def update(self, change):
         self.index=self.tabs.selected_index if self.tabs.selected_index is not None else self.index
+        if not self.index is None:
+            charge=self._particles_manager._df.iloc[self.index]["tracker_charge"] if self.truepart==False else self._particles_manager._df.iloc[self.index]["charge"]
+            phi_0=self._particles_manager._df.iloc[self.index]["tracker_phi"] if self.truepart==False else self._particles_manager._df.iloc[self.index]["phi"]
+            R_0=self._particles_manager._df.iloc[self.index]["tracker_pt"]/self.B if self.truepart==False else self._particles_manager._df.iloc[self.index]["pt"]/self.B
 
-        charge=self._particles_manager._df.iloc[self.index]["tracker_charge"] if self.truepart==False else self._particles_manager._df.iloc[self.index]["charge"]
-        phi_0=self._particles_manager._df.iloc[self.index]["tracker_phi"] if self.truepart==False else self._particles_manager._df.iloc[self.index]["phi"]
-        R_0=self._particles_manager._df.iloc[self.index]["tracker_pt"]/self.B if self.truepart==False else self._particles_manager._df.iloc[self.index]["pt"]/self.B
-
-        trace = self.make_trace(charge,phi_0,R_0)
-        self.lineartist.set_segments([trace])
-        self.lineartist.set_colors(["red"])
-        self.bm.update()        
-        self._particles_manager.Klong_measurement(self.index, (self.tickbox[self.index].value == "ja"))
+            trace = self.make_trace(charge,phi_0,R_0)
+            self.lineartist.set_segments([trace])
+            self.lineartist.set_colors(["red"])
+            self.bm.update()        
+            self._particles_manager.Klong_measurement(self.index, (self.tickbox[self.index].value == "ja"))
 
     def show(self):
         self.tickbox = []
