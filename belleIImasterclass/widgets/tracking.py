@@ -112,7 +112,6 @@ class TrackingWidget:
             self._particles_manager.tracker_measurement(index = self._current_particle_index, pt = pt, phi = phi, charge = charge)
         df = self._particles_manager._df
         segments, colors = self._tracker.get_hit_segments(df, self._current_particle_index)
-        print(self._current_particle_index)
         if self._current_particle_index != None:
             trace = Tracks(pt = pt, phi = phi, charge = charge, B = self._tracker._B_field, granularity = self._granularity)
             trace_segments = trace.get_trace_array()
