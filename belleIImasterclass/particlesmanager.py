@@ -40,7 +40,7 @@ class ParticlesManager:
     def energy_measurement(self, index, energy) -> None:
         self._df.at[index, "ecl_energy"] = energy
 
-    def Klong_measurement(self, index, hit) -> None:
+    def Klm_measurement(self, index, hit) -> None:
         self._df.at[index, "klm_detect"] = hit
 
     def ecal_patches(self, index, patches, colors) -> None:
