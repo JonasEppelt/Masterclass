@@ -25,7 +25,8 @@ class KLMWidget():
         self.segmentwidth=4
         self.klmradius=19
         self.truepart=true_particles
-        
+        self.index=0
+
         self.klm_detector=klm_detector(self._particles_manager,self.klmsegments,self.segmentwidth,self.klmradius,self.B,self.always_hit)
 
         self.klm_collection=self.klm_detector.make_klm_collection() 
@@ -69,11 +70,13 @@ class KLMWidget():
         self.box_list = []
         self.boxtext=widgets.Text(value = "Wurde hier ein Teilchen erkannt?", disabled = True)
         for i in range(self._particles_manager.n_particles): 
-            self.tabs.set_title(i,f"Teilchen {i}")
             self.tickbox.append(widgets.RadioButtons(options=['ja', 'nein']))
             self.tickbox[i].observe(self.update, names = "value")
             self.box_list.append(widgets.HBox([self.boxtext,self.tickbox[i]]))
-        self.tabs.children = self.box_list
+        self.tabs = widgets.Accordion(
+            titles = [f"Teilchen {str(i)}" for i in range(self._particles_manager.n_particles)],
+            children=self.box_list,)
+        self.tabs.observe(self.update, names = "selected_index")
         self.final_box = widgets.VBox(children=[self.tabs, self.out])
         with self.out:
             plt.show()
