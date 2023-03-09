@@ -42,7 +42,7 @@ class klm_detector():
         tracker_collection=LineCollection(lines, color = "gray", linewidths = 6)
         return tracker_collection
 
-    def make_klm_collection(self):
+    def make_klm_collection(self): 
         self.segments_coords=np.zeros((self.klmsegments,100,2))
         self.segments_angle=np.zeros((self.klmsegments,2))
         for i in range(self.klmsegments):
@@ -58,7 +58,7 @@ class klm_detector():
         klm_collection=LineCollection(self.segments_coords, color = np.array([0,0,1,0.9]), linewidths = 3.6)
         return klm_collection
 
-    def make_hit_collection(self):
+    def make_hit_collection(self): #make_klm_collection must be called befor calling make_hit_collection
         self.hits=np.full((self.klmsegments), False)
         for i in range(self._particles_manager.n_particles): 
             if (self._particles_manager._df.iloc[i]["pdg"]==13 or self._particles_manager._df.iloc[i]["pdg"]==-13 or self.always_hit):

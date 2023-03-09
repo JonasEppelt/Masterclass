@@ -51,14 +51,19 @@ class Tracker:
         if particle_radius <= 0.0:
             return self._segment_df.radius != self._segment_df.radius
         relative_charge = particle[f"{tracker_selected}charge"]*(self._B_field/abs(self._B_field))
-        theta=relative_charge*np.pi/2-particle[f"{tracker_selected}phi"]+np.arccos(self._segment_df.radius/(2*particle_radius))*relative_charge-np.pi/2
 
-        mask = theta < 0
-        theta[mask] += 2*np.pi
-        mask = theta < 0
-        theta[mask] += 2*np.pi
-        mask = theta > 2*np.pi
-        theta[mask] -= 2*np.pi
+        mask0=self._segment_df.radius<=(2*particle_radius)
+        theta=relative_charge*np.pi/2-particle[f"{tracker_selected}phi"]+np.arccos(self._segment_df.radius[mask0]/(2*particle_radius))*relative_charge-np.pi/2
+
+        mask1 = theta < 0
+        theta[mask1] += 2*np.pi
+        mask1 = theta < 0
+        theta[mask1] += 2*np.pi
+        mask1 = theta > 2*np.pi
+        theta[mask1] -= 2*np.pi
+
+        theta = np.append(theta,10*np.ones(len(mask0)-mask0.sum()))
+
         if particle[f"{tracker_selected}charge"] == 0:
             return np.zeros(len(theta), dtype=int)
         else:
