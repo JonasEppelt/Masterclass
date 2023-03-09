@@ -145,7 +145,7 @@ class KLMWidget():
     def show(self):
         self.tickbox = []
         self.box_list = []
-        self.boxtext=widgets.Text(value = "Wurde hier ein Teilchen erkannt?", disabled = True)
+        self.boxtext=widgets.Text(value = "Gibt es einen Treffer im KLM für dieses Teilchen?", disabled = True)
         for i in range(self._particles_manager.n_particles): 
             self.tickbox.append(widgets.RadioButtons(options=['ja', 'nein']))
             self.tickbox[i].observe(self.update, names = "value")
