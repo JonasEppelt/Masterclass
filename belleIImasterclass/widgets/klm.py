@@ -20,7 +20,7 @@ class KLMWidget():
     def __init__(self,particles_manager: ParticlesManager,always_hit=False,true_particles=False,B=0.05):
         self.always_hit=always_hit
         self._particles_manager = particles_manager
-        self.B=B
+        self.B=0.5/500
         self.klmsegments=18
         self.segmentwidth=4
         self.klmradius=19
@@ -47,7 +47,7 @@ class KLMWidget():
         self.bm = BlitManager(fig.canvas ,self.lineartist)
     
     def make_tracker_ecl_collection(self):
-        self.ecl_collection=LineCollection([16*np.array([np.cos(np.linspace(0,6.3)),np.sin(np.linspace(0,6.3))]).T], color = np.array([1,0,0,0.6]), linewidths = 5)
+        self.ecl_collection=LineCollection([16*np.array([np.cos(np.linspace(0,6.3)),np.sin(np.linspace(0,6.3))]).T], color = "gray", linewidths = 5)
         lines=[]
         for l in range(1,14+1):
             len_segment = 2*np.pi/(3+2*l) # length of segment in layer l in rad
@@ -70,7 +70,7 @@ class KLMWidget():
             points[np.arange(25,50)]=np.array([np.linspace(points[24,0],points[50,0],25),np.linspace(points[24,1],points[50,1],25)]).T
             points[np.arange(75,100)]=np.array([np.linspace(points[74,0],points[0,0],25),np.linspace(points[74,1],points[0,1],25)]).T
             self.segments_coords[i]=points
-        self.klm_collection=LineCollection(self.segments_coords, color = np.array([0,0,1,0.9]), linewidths = 3.6)
+        self.klm_collection=LineCollection(self.segments_coords, color = "gray", linewidths = 3.6)
 
     def make_hit_collection(self):
         self.hits=np.full((self.klmsegments), False)
@@ -114,17 +114,33 @@ class KLMWidget():
         return trace
 
     def update(self, change):
+        tracker = "tracker_" if self.truepart == False else ""
         self.index=self.tabs.selected_index if self.tabs.selected_index is not None else self.index
         if not self.index is None:
-            charge=self._particles_manager._df.iloc[self.index]["tracker_charge"] if self.truepart==False else self._particles_manager._df.iloc[self.index]["charge"]
-            phi_0=self._particles_manager._df.iloc[self.index]["tracker_phi"] if self.truepart==False else self._particles_manager._df.iloc[self.index]["phi"]
-            R_0=self._particles_manager._df.iloc[self.index]["tracker_pt"]/self.B if self.truepart==False else self._particles_manager._df.iloc[self.index]["pt"]/self.B
-
-            trace = self.make_trace(charge,phi_0,R_0)
-            self.lineartist.set_segments([trace])
-            self.lineartist.set_colors(["red"])
-            self.bm.update()        
+            charge=self.get_var(self.index,f"{tracker}charge")
+            phi_0=self.get_var(self.index,f"{tracker}phi")  
+            R_0= self.get_var(self.index,f"{tracker}pt")  
             self._particles_manager.Klong_measurement(self.index, (self.tickbox[self.index].value == "ja"))
+        traces = []
+        colors = []
+        for i in range(self._particles_manager.n_particles):
+            charge=self.get_var(i,f"{tracker}charge")
+            phi_0=self.get_var(i,f"{tracker}phi")  
+            R_0= self.get_var(i,f"{tracker}pt") *10
+            trace = self.make_trace(charge,phi_0,R_0)
+            color = "orange" if i == self.index else "blue"
+            traces.append(trace)
+            colors.append(color)
+        self.lineartist.set_segments(traces)
+        self.lineartist.set_colors(np.array(colors))
+        
+        self.bm.update()        
+        
+    def get_var(self,index, var ):
+        var = self._particles_manager._df.iloc[index][var] if self.truepart==False else self._particles_manager._df.iloc[index][var]
+        if not var is None:
+            return var
+        return 0
 
     def show(self):
         self.tickbox = []
