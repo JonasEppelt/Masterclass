@@ -596,7 +596,7 @@ class MatchingWidget:
             self.moment_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Impuls", disabled = True))
             self.invmas_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
             self.E_p_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$E/p$", disabled = True))
-            self.KL0_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$K_L^0$", disabled = True))   
+            self.KL0_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "KLM", disabled = True))   
             self.res_box = widgets.VBox(children=[self.label1, self.energy_txt[i], self.charge_txt[i], self.moment_txt[i], self.invmas_txt[i], self.E_p_txt[i],self.px_txt[i],self.py_txt[i],self.pz_txt[i],self.KL0_txt[i],self.out1])
             self.res_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "700px ",width = "370px")            
 
@@ -605,7 +605,7 @@ class MatchingWidget:
             self.sel_mass.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
             self.sel_charge.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "el. Ladung", disabled = True))
             self.sel_E_p.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$E/p$", disabled = True))
-            self.sel_KL0.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$K_L^0$", disabled = True))
+            self.sel_KL0.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "KLM", disabled = True))
             self.sel_label.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", disabled = True))
             self.sel_image.append(widgets.Image(value=truth_particles.loc["e+", "Image"],format='png',width=320,height=320))
             self.sel_box = widgets.VBox(children=[self.label2, self.part_ids[i], self.sel_mass[i], self.sel_charge[i], self.sel_KL0[i],self.sel_E_p[i],self.sel_label[i],self.sel_image[i]])
