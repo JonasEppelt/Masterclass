@@ -11,8 +11,6 @@ from matplotlib.collections import LineCollection
 from belleIImasterclass.elements.klm_detector import klm_detector
 from belleIImasterclass.particlesmanager import ParticlesManager
 from belleIImasterclass.widgets.blitmanager import BlitManager
-from copy import deepcopy
-from matplotlib.collections import LineCollection
 
 
 
