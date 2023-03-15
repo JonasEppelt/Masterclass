@@ -28,7 +28,7 @@ class klm_detector():
         self.B=B
 
     def make_ecl_collection(self):
-        ecl_collection=LineCollection([self.eclradius*np.array([np.cos(np.linspace(0,6.3)),np.sin(np.linspace(0,6.3))]).T], color = "gray", linewidths = 5)
+        ecl_collection=LineCollection([self.eclradius*np.array([np.cos(np.linspace(0,6.3)),np.sin(np.linspace(0,6.3))]).T], color = "red", linewidths = 5)
         return ecl_collection
 
     def make_tracker_collection(self):    
@@ -55,7 +55,7 @@ class klm_detector():
             points[np.arange(25,50)]=np.array([np.linspace(points[24,0],points[50,0],25),np.linspace(points[24,1],points[50,1],25)]).T
             points[np.arange(75,100)]=np.array([np.linspace(points[74,0],points[0,0],25),np.linspace(points[74,1],points[0,1],25)]).T
             self.segments_coords[i]=points
-        klm_collection=LineCollection(self.segments_coords, color = "gray", linewidths = 3.6)
+        klm_collection=LineCollection(self.segments_coords, color = "blue", linewidths = 3.6)
         return klm_collection
 
     def make_hit_collection(self): #make_klm_collection must be called befor calling make_hit_collection
@@ -82,7 +82,7 @@ class klm_detector():
 
                 self.hits=np.logical_or(self.hits,(np.logical_and(self.segments_angle[:,0]<inner_phi,self.segments_angle[:,1]>inner_phi)))
                 self.hits=np.logical_or(self.hits,(np.logical_and(self.segments_angle[:,0]<outer_phi,self.segments_angle[:,1]>outer_phi)))
-        hit_collection=LineCollection(self.segments_coords[self.hits], color = "blue", linewidths = 2)
+        hit_collection=LineCollection(self.segments_coords[self.hits], color = "red", linewidths = 2)
         return hit_collection
 
     def make_trace(self,charge,phi_0,R_0):
