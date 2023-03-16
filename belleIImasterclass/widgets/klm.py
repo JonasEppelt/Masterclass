@@ -35,9 +35,9 @@ class KLMWidget():
     def update(self, change):
         self.index=self.tabs.selected_index if self.tabs.selected_index is not None else self.index
 
-        charge=self._particles_manager._df.iloc[self.index]["tracker_charge"] if self.truepart==False else self._particles_manager._df.iloc[self.index]["charge"]
-        phi_0=self._particles_manager._df.iloc[self.index]["tracker_phi"] if self.truepart==False else self._particles_manager._df.iloc[self.index]["phi"]
-        R_0=self._particles_manager._df.iloc[self.index]["tracker_pt"]/self.B if self.truepart==False else self._particles_manager._df.iloc[self.index]["pt"]/self.B
+        charge=self._particles_manager._df.loc[self.index,"tracker_charge"] if self.truepart==False else self._particles_manager._df.loc[self.index,"charge"]
+        phi_0=self._particles_manager._df.loc[self.index,"tracker_phi"] if self.truepart==False else self._particles_manager._df.loc[self.index,"phi"]
+        R_0=self._particles_manager._df.loc[self.index,"tracker_pt"]/self.B if self.truepart==False else self._particles_manager._df.loc[self.index,"pt"]/self.B
 
         trace = self.klm_detector.make_trace(charge,phi_0,R_0)
         self.lineartist.set_segments([trace])

@@ -61,10 +61,10 @@ class klm_detector():
     def make_hit_collection(self): #make_klm_collection must be called befor calling make_hit_collection
         self.hits=np.full((self.klmsegments), False)
         for i in range(self._particles_manager.n_particles): 
-            if (self._particles_manager._df.iloc[i]["pdg"]==13 or self._particles_manager._df.iloc[i]["pdg"]==-13 or self.always_hit):
-                charge=self._particles_manager._df.iloc[i]["charge"]
-                phi_0=self._particles_manager._df.iloc[i]["phi"]
-                R_0=self._particles_manager._df.iloc[i]["pt"]/self.B
+            if (self._particles_manager._df.loc[i,"pdg"]==13 or self._particles_manager._df.loc[i,"pdg"]==-13 or self.always_hit):
+                charge=self._particles_manager._df.loc[i,"charge"]
+                phi_0=self._particles_manager._df.loc[i,"phi"]
+                R_0=self._particles_manager._df.loc[i,"pt"]/self.B
                 trace = self.make_trace(charge,phi_0,R_0)
                 inner_phi=0
                 outer_phi=0

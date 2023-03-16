@@ -48,5 +48,5 @@ class ParticlesManager:
         self._df.at[index,"colors"] = colors
 
     def get_crystall_content(self, n_particle):
-        return np.clip(self._df.iloc[n_particle][self.crystal_column_names].to_numpy(),0,100000)
+        return np.clip(self._df.loc[n_particle,self.crystal_column_names].to_numpy(),0,100000)
     
