@@ -26,8 +26,8 @@ class ECal:
 
         self._backward_center = np.array([300,200])
         self._backward_number_of_rings = 10
-        self._backward_rings_sizes =  np.array([64,64,64,96,96,96,96,96,144,144])
-        self._backward_ring_radiuses = np.linspace(58.51,129.2,10)
+        self._backward_rings_sizes =  np.array([144,144,96,96,96,96,96,64,64,64])
+        self._backward_ring_radiuses = np.linspace(129.2,58.51,10)
         backward_coordinates, backward_angles, backward_offsets = self.get_caps_patches(self._backward_center, self._backward_number_of_rings, self._backward_rings_sizes, self._backward_ring_radiuses, )
 
         self._patch_coordinates = np.append(np.append(forward_coordinates, barrel_coordinates, axis = 1), backward_coordinates, axis=1)

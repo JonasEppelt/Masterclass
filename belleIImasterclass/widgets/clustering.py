@@ -49,9 +49,9 @@ class ECLWidget:
     
     def show(self) -> None:
         with self._out:
-            self._fig, self._ax = plt.subplots(figsize = (14, 10*60/89), constrained_layout = True)
+            self._fig, self._ax = plt.subplots(figsize = (14, 14*60/89), constrained_layout = True)
         self._ax.set_xlim(-450, 450)
-        self._ax.set_ylim(-300, 350)
+        self._ax.set_ylim(-280, 340)
         self._ax.set_yticklabels([])
         self._ax.set_xticklabels([])
 
