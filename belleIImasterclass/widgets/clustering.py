@@ -50,18 +50,18 @@ class ECLWidget:
     def show(self) -> None:
         with self._out:
             self._fig, self._ax = plt.subplots(figsize = (14, 10*60/89), constrained_layout = True)
-        self._ax.set_xlim(-475, 450)
+        self._ax.set_xlim(-450, 450)
         self._ax.set_ylim(-300, 350)
         self._ax.set_yticklabels([])
         self._ax.set_xticklabels([])
 
         self._crystall_collection = PatchCollection(self._ecal.patches, color = self._crystall_colors)
         self._crystall_artist = self._ax.add_collection(self._crystall_collection)
-
-        self._selection_collection = LineCollection([])
-        self._selection_artist = self._ax.add_collection(self._selection_collection)
+        self._crystall_artist.set_aa(True)
+        self._crystall_artist.set_linewidth(1.4)
+        self._crystall_artist.set_animated(True)
         
-        self._blit_manager = BlitManager(self._fig.canvas, self._crystall_artist, self._selection_artist)
+        self._blit_manager = BlitManager(self._fig.canvas, self._crystall_artist)
 
         self._lasso = LassoSelector(self._ax, onselect = self.on_select)
         

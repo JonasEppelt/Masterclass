@@ -17,7 +17,7 @@ class EnergyWidget():
         self._total_energy=total_energy #in GeV
         self.true_particles=true_particles
         self._particles_manager = particles_manager
-        self.max_pt=np.amax(self._particles_manager._df.loc[:,"pt"] if self.true_particles else self._particles_manager._df.loc[:,"tracker_pt"])
+        self.max_pt=np.amax(self._particles_manager._df.loc[:,"pt"] if self.true_particles else self._particles_manager._df.loc[:,"tracker_pt"])+0.01
 
     def show(self):
         self.out = widgets.Output()
@@ -59,14 +59,20 @@ class EnergyWidget():
         totalcharge=0
         totalpx=0
         totalpy=0
+        totalenergy=0
         for index in range(self._particles_manager.n_particles):
             totalcharge+=self._particles_manager._df.loc[index,"charge"] if self.true_particles else self._particles_manager._df.loc[index,"tracker_charge"]
             pt=self._particles_manager._df.loc[index,"phi"] if self.true_particles else self._particles_manager._df.loc[index,"tracker_phi"]
             phi=self._particles_manager._df.loc[index,"pt"] if self.true_particles else self._particles_manager._df.loc[index,"tracker_pt"]
+            totalenergy=self._particles_manager._df.loc[index,"energy"] if self.true_particles else self._particles_manager._df.loc[index,"ecl_energy"]
             px=pt*np.cos(phi)
             totalpx += px
             py=pt*np.sin(phi)
             totalpy += py
+            if px==0:
+                px=0.000001
+            if py==0:
+                py=0.000001            
             arrows.append(Arrow(0,0,px,py,width=0.2*pt))
             colors.append("blue")
         
@@ -80,10 +86,12 @@ class EnergyWidget():
         self.pt_text.value=str(np.sqrt(totalpx**2+totalpy**2))
         self.px_text.value=str(totalpx)
         self.py_text.value=str(totalpy)
+        self.energy_text.value=str(totalenergy)
         self.charge_text.value=str(totalcharge)
 
         self.patchartist.set_paths(arrows)
         self.patchartist.set_color(colors)
+        
         self.bm.update()
 
 

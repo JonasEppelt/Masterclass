@@ -40,7 +40,7 @@ class ECal:
             width = self._crystal_size,
             height = self._crystal_size,
             angle = self._patch_angles[n]*180/np.pi,
-            linewidth = 20,
+            linewidth = 10,
         ) for n in range(self._n_patches)]
     
     @property
