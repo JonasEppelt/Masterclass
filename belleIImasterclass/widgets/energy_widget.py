@@ -44,9 +44,10 @@ class EnergyWidget():
         self.py_text=widgets.Text(description = "py:", value = "0", disabled=True)
         self.pt_text=widgets.Text(description = "pt:", value = "0", disabled=True)
         self.energy_text=widgets.Text(description = "Energie:", value = "0", disabled=True)
+        self.missing_energy_text=widgets.Text(description = "fehlende Energie:", value = "0", disabled=True)
         self.charge_text=widgets.Text(description = "Ladung:", value = "0", disabled=True)
 
-        self.box=widgets.VBox(children=[self.px_slider,self.py_slider,self.m_slider,self.charge_button,self.px_text,self.py_text,self.pt_text,self.energy_text,self.charge_text])
+        self.box=widgets.VBox(children=[self.px_slider,self.py_slider,self.m_slider,self.charge_button,self.px_text,self.py_text,self.pt_text,self.energy_text,self.missing_energy_text,self.charge_text])
         self.final_box = widgets.HBox(children=[self.box, self.out])
         with self.out:
             plt.show()
@@ -86,7 +87,8 @@ class EnergyWidget():
         self.pt_text.value=str(np.sqrt(totalpx**2+totalpy**2))
         self.px_text.value=str(totalpx)
         self.py_text.value=str(totalpy)
-        self.energy_text.value=str(totalenergy)
+        self.energy_text.value=str(totalenergy)+"GeV"
+        self.missing_energy_text.value=str(self._total_energy-totalenergy)+"GeV"
         self.charge_text.value=str(totalcharge)
 
         self.patchartist.set_paths(arrows)
