@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from copy import deepcopy
-from matplotlib.patches import Arrow
+from matplotlib.patches import FancyArrow
 from matplotlib.collections import PatchCollection
 
 #from belleIImasterclass.elements.missing_energy import mis
@@ -25,16 +25,16 @@ class EnergyWidget():
             fig, ax = plt.subplots(figsize=(7,7),constrained_layout=True)
         ax.set_yticklabels([])
         ax.set_xticklabels([])
-        ax.set_ylim(-self.max_pt,self.max_pt)
-        ax.set_xlim(-self.max_pt,self.max_pt)
+        ax.set_ylim(-self.max_pt*1.5,self.max_pt*1.5)
+        ax.set_xlim(-self.max_pt*1.5,self.max_pt*1.5)
         ax.scatter(0,0,s=320, marker='*',color="red")
         self.patchartist = ax.add_collection(PatchCollection([]))
         self.patchartist.set_animated(True)
         self.bm = BlitManager(fig.canvas ,self.patchartist)
 
-        self.px_slider=widgets.FloatSlider( 0,min = -self.max_pt*1.1, max = self.max_pt*1.1, step = 0.01, description = "$p_x$")
+        self.px_slider=widgets.FloatSlider( 0,min = -self.max_pt*1.2, max = self.max_pt*1.2, step = 0.01, description = "$p_x$")
         self.px_slider.observe(self.update, names = "value")
-        self.py_slider=widgets.FloatSlider( 0,min = -self.max_pt*1.1, max = self.max_pt*1.1, step = 0.01, description = "$p_y$")
+        self.py_slider=widgets.FloatSlider( 0,min = -self.max_pt*1.2, max = self.max_pt*1.2, step = 0.01, description = "$p_y$")
         self.py_slider.observe(self.update, names = "value")
         self.m_slider=widgets.FloatSlider( 0,min = 0, max = 10, step = 0.01, description = "$Masse$")
         self.m_slider.observe(self.update, names = "value")
@@ -60,21 +60,23 @@ class EnergyWidget():
         totalcharge=0
         totalpx=0
         totalpy=0
+        totalpz=0
         totalenergy=0
         for index in range(self._particles_manager.n_particles):
             totalcharge+=self._particles_manager._df.loc[index,"charge"] if self.true_particles else self._particles_manager._df.loc[index,"tracker_charge"]
-            pt=self._particles_manager._df.loc[index,"phi"] if self.true_particles else self._particles_manager._df.loc[index,"tracker_phi"]
-            phi=self._particles_manager._df.loc[index,"pt"] if self.true_particles else self._particles_manager._df.loc[index,"tracker_pt"]
+            pt=self._particles_manager._df.loc[index,"pt"] if self.true_particles else self._particles_manager._df.loc[index,"tracker_pt"]
+            totalpz+=self._particles_manager._df.loc[index,"pz"]
+            phi=self._particles_manager._df.loc[index,"phi"] if self.true_particles else self._particles_manager._df.loc[index,"tracker_phi"]
             totalenergy=self._particles_manager._df.loc[index,"energy"] if self.true_particles else self._particles_manager._df.loc[index,"ecl_energy"]
-            px=pt*np.cos(phi)
-            totalpx += px
-            py=pt*np.sin(phi)
+            py=pt*np.cos(phi)
             totalpy += py
+            px=pt*np.sin(phi)
+            totalpx += px
             if px==0:
                 px=0.000001
             if py==0:
                 py=0.000001            
-            arrows.append(Arrow(0,0,px,py,width=0.2*pt))
+            arrows.append(FancyArrow(0,0,px,py,width=0.05))
             colors.append("blue")
         
         px=self.px_slider.value
@@ -82,15 +84,17 @@ class EnergyWidget():
         py=self.py_slider.value
         totalpy += py
         totalcharge+= 1*(self.charge_button.value=='positive Ladung')-1*(self.charge_button.value=='negative Ladung')
-        arrows.append(Arrow(0,0,px,py,width=0.2))
-        colors.append("red")
+        arrows.append(FancyArrow(0,0,px,py,width=0.05))
+        colors.append("red")    
         self.pt_text.value=str(np.sqrt(totalpx**2+totalpy**2))
         self.px_text.value=str(totalpx)
         self.py_text.value=str(totalpy)
+        mass=self.m_slider.value
+        E=np.sqrt(mass**2 + (px**2+py**2+(-totalpz)**2))  
+        totalenergy+=E       
         self.energy_text.value=str(totalenergy)+"GeV"
         self.missing_energy_text.value=str(self._total_energy-totalenergy)+"GeV"
         self.charge_text.value=str(totalcharge)
-
         self.patchartist.set_paths(arrows)
         self.patchartist.set_color(colors)
         
