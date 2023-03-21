@@ -15,7 +15,7 @@ from belleIImasterclass.widgets.blitmanager import BlitManager
 
 
 class KLMWidget():
-    def __init__(self,particles_manager: ParticlesManager,always_hit=False,true_particles=False,B=0.05):
+    def __init__(self,particles_manager: ParticlesManager,always_hit=False,true_particles=False,B=0.02):
         self.always_hit=always_hit
         self._particles_manager = particles_manager
         self.B=B
