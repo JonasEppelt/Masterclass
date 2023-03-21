@@ -40,8 +40,6 @@ class EnergyWidget():
         self.E_slider.observe(self.update, names = "value")
         self.charge_button=widgets.RadioButtons(options=['positive Ladung', 'negative Ladung',"ungeladen"])
         self.charge_button.observe(self.update, names = "value")
-        self.update_button = widgets.Button(description='Update',disabled=False,button_style='',tooltip='Update!')
-        self.update_button.observe(self.update, names = "value")
 
         self.px_text=widgets.Text(description = "px:", value = "0", disabled=True)
         self.py_text=widgets.Text(description = "py:", value = "0", disabled=True)
@@ -51,7 +49,7 @@ class EnergyWidget():
         self.missing_energy_text=widgets.Text(description = "fehlende Energie:", value = "0", disabled=True)
         self.charge_text=widgets.Text(description = "Ladung:", value = "0", disabled=True)
 
-        self.box=widgets.VBox(children=[self.px_slider,self.py_slider,self.E_slider,self.charge_button,self.px_text,self.py_text,self.pt_text,self.mass_text,self.energy_text,self.missing_energy_text,self.charge_text,self.update_button])
+        self.box=widgets.VBox(children=[self.px_slider,self.py_slider,self.E_slider,self.charge_button,self.px_text,self.py_text,self.pt_text,self.mass_text,self.energy_text,self.missing_energy_text,self.charge_text])
         self.final_box = widgets.HBox(children=[self.box, self.out])
         with self.out:
             plt.show()
