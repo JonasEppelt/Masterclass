@@ -50,6 +50,7 @@ class EnergyWidget():
         self.charge_text=widgets.Text(description = "Ladung:", value = "0", disabled=True)
         self.update_button = widgets.Button(description='Update!',disabled=False,tooltip='Update',icon='rotate-right')
         self.update_button.on_click(self.update)
+        
         self.box=widgets.VBox(children=[self.px_slider,self.py_slider,self.E_slider,self.charge_button,self.px_text,self.py_text,self.pt_text,self.mass_text,self.energy_text,self.missing_energy_text,self.charge_text,self.update_button])
         self.final_box = widgets.HBox(children=[self.box, self.out])
         with self.out:

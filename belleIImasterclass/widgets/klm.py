@@ -66,15 +66,19 @@ class KLMWidget():
         self.tabs.observe(self.update, names = "selected_index")
         self.tickbox = []
         self.box_list = []
-        self.boxtext=widgets.Label(value = "Gibt es einen Treffer im KLM für dieses Teilchen?", disabled = True)
+        self.boxtext=widgets.Text(value = "Gibt es einen Treffer im KLM für dieses Teilchen?", disabled = True)
+        self.update_button = widgets.Button(description='Update!',disabled=False,tooltip='Update',icon='rotate-right')
+        
         for i in range(self._particles_manager.n_particles): 
             self.tickbox.append(widgets.RadioButtons(options=['ja', 'nein']))
             self.tickbox[i].observe(self.update, names = "value")
-            self.box_list.append(widgets.HBox([self.boxtext,self.tickbox[i]]))
+            self.box_list.append(widgets.HBox([self.boxtext,self.tickbox[i],self.update_button]))
         self.tabs = widgets.Accordion(
             titles = [f"Teilchen {str(i)}" for i in range(self._particles_manager.n_particles)],
-            children=self.box_list,)
+            children=self.box_list)
+        
         self.tabs.observe(self.update, names = "selected_index")
+        self.update_button.on_click(self.update)
         self.final_box = widgets.VBox(children=[self.tabs, self.out])
         with self.out:
             plt.show()
