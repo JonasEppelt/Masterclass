@@ -17,6 +17,7 @@ class ParticlesManager:
         self._df["klm_detect"] = False
         self._df["patches"] = [[]]*len(self._df)
         self._df["colors"] = [np.array([])]*len(self._df)
+        self.missing_df=pd.DataFrame(data=[[0,0,0,0,0,0,0]],columns=["px","py","pz","p","energy","mass","charge"])
     
     @property
     def index(self) -> pd.Index:
@@ -46,6 +47,15 @@ class ParticlesManager:
     def ecal_patches(self, index, patches, colors) -> None:
         self._df.at[index,"patches"]=patches
         self._df.at[index,"colors"] = colors
+
+    def missing_particle_measurement(self,px,py,pz,energy,mass,charge) -> None:
+        self.missing_df.at[0,"px"]=px
+        self.missing_df.at[0,"py"]=py
+        self.missing_df.at[0,"pz"]=pz
+        self.missing_df.at[0,"p"]=np.sqrt(px**2+py**2+pz**2)
+        self.missing_df.at[0,"energy"]=energy
+        self.missing_df.at[0,"mass"]=mass
+        self.missing_df.at[0,"charge"]=charge
 
     def get_crystall_content(self, n_particle):
         return np.clip(self._df.loc[n_particle,self.crystal_column_names].to_numpy(),0,100000)

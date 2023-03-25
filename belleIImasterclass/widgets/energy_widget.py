@@ -48,8 +48,9 @@ class EnergyWidget():
         self.mass_text=widgets.Text(description = "Masse:", value = "0", disabled=True)
         self.missing_energy_text=widgets.Text(description = "fehlende Energie:", value = "0", disabled=True)
         self.charge_text=widgets.Text(description = "Ladung:", value = "0", disabled=True)
-
-        self.box=widgets.VBox(children=[self.px_slider,self.py_slider,self.E_slider,self.charge_button,self.px_text,self.py_text,self.pt_text,self.mass_text,self.energy_text,self.missing_energy_text,self.charge_text])
+        self.update_button = widgets.Button(description='Update!',disabled=False,tooltip='Update',icon='rotate-right')
+        self.update_button.on_click(self.update)
+        self.box=widgets.VBox(children=[self.px_slider,self.py_slider,self.E_slider,self.charge_button,self.px_text,self.py_text,self.pt_text,self.mass_text,self.energy_text,self.missing_energy_text,self.charge_text,self.update_button])
         self.final_box = widgets.HBox(children=[self.box, self.out])
         with self.out:
             plt.show()
@@ -88,7 +89,8 @@ class EnergyWidget():
         pz=-totalpz
         totalcharge+= 1*(self.charge_button.value=='positive Ladung')-1*(self.charge_button.value=='negative Ladung')
         totalenergy+=self.E_slider.value
-        mass=np.sqrt(abs(self.E_slider.value**2 - (px**2+py**2+pz**2)))            
+        mass=np.sqrt(abs(self.E_slider.value**2 - (px**2+py**2+pz**2)))  
+        self._particles_manager.missing_particle_measurement(px,py,pz,self.E_slider.value,mass,1*(self.charge_button.value=='positive Ladung')-1*(self.charge_button.value=='negative Ladung'))          
         arrows.append(FancyArrow(0,0,px,py,width=0.05))
         colors.append("red")    
         self.pt_text.value=str(np.sqrt(totalpx**2+totalpy**2))
