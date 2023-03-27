@@ -12,6 +12,11 @@ class ECal:
         self._crystal_size = crystal_size
         self._linewidth = linewidth
 
+        self.thetavalues=np.array([13.2,14.7,16.2,17.8,19.2,20.8,22.3,23.7,25.2,26.6,28,29.4,30.8,32.9,34.3,35.7,37.1,38.6,40.2,
+                                   41.7,43.4,45.1,46.9,48.6,50.5,52.4,54.4,56.4,58.5,60.6,62.8,65,67.2,69.5,71.9,74.2,76.6,79,
+                                   81.6,84,86.5,88.9,91.2,93.5,96,98.5,101,103.4,105.8,108.2,110.5,112.8,115.1,117.3,119.4,
+                                   121.5,123.6,125.6,127.6,131.4,133.6,135.8,138.1,140.5,142.9,145.5,148.2,150.7,153.4])*np.pi/180
+
         self._barrel_rows = 46
         self._barrel_columns = 144
         self._barrel_center = np.array([0,-100])
@@ -67,3 +72,28 @@ class ECal:
             coordinates = np.append(coordinates, np.full((ring_sizes[n_ring], 2), cap_center).T+ring_radiuses[n_ring]*np.array([np.cos(phi), np.sin(phi)]), axis = 1)
             offsets = np.append(offsets, -np.sqrt(2)*self._crystal_size*np.array([np.sin(np.pi/4-phi), np.cos(np.pi/4-phi)])/2, axis = 1)
         return coordinates, angles, offsets
+    
+    def get_cell_coordinates(self,theta,phi):
+        cell_ids=[]
+        for i in range(len(theta)):
+            _phi=phi[i]
+            if _phi < 0:
+                _phi=_phi+2*np.pi
+            theta_id=np.argmin(abs(theta[i]-self.thetavalues))
+            if theta_id<self._forward_number_of_rings:
+                id=self._forward_rings_sizes[np.arange(theta_id)].sum()
+                id+=int(self._forward_rings_sizes[theta_id]*_phi/(2*np.pi))
+
+            elif theta_id>=self._forward_number_of_rings and theta_id<self._forward_number_of_rings+self._barrel_rows:
+                id=self._forward_rings_sizes.sum()
+                id+=self._barrel_columns*(theta_id-self._forward_number_of_rings)
+                id+=int(self._barrel_columns*_phi/(2*np.pi))
+            else:
+                id=self._forward_rings_sizes.sum()
+                id+=self._barrel_columns*self._barrel_rows
+                id+=self._backward_rings_sizes[np.arange(theta_id-self._barrel_rows-self._forward_number_of_rings)].sum()
+                id+=int(self._backward_rings_sizes[theta_id-self._barrel_rows-self._forward_number_of_rings]*_phi/(2*np.pi))
+
+            cell_ids.append(id)    
+        return self._patch_coordinates[:,cell_ids]+self._patch_offsets[:,cell_ids]
+    

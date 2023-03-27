@@ -3,28 +3,28 @@ from matplotlib.widgets import LassoSelector
 from belleIImasterclass.particlesmanager import ParticlesManager
 from belleIImasterclass.elements.ecal import ECal
 from belleIImasterclass.widgets.blitmanager import BlitManager
-from ipywidgets import Output, Accordion, Text, HBox, VBox
+from ipywidgets import Output, Accordion, Text, HBox, VBox, Button
 import matplotlib.pyplot as plt
 import numpy as np
 from copy import deepcopy
-from matplotlib.collections import PatchCollection, LineCollection
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Circle
 from matplotlib.transforms import Affine2D
 from matplotlib.patches import Rectangle
 
 class ECLWidget:
-    def __init__(self,particles_manager: ParticlesManager, noise_ratio = 0.2) -> None:
+    def __init__(self,particles_manager: ParticlesManager, noise_ratio = 0.2, true_particles=False) -> None:
         self._particles_manager = particles_manager
         self._noise_ratio = noise_ratio
+        self._true_particles=true_particles
         self._ecal = ECal()        
         self._selected_crystalls = [np.array([], dtype = int)]*self._particles_manager.n_particles
 
         self._sel_particle = None
-        self._center_crystals = np.zeros(len(self._particles_manager._df),dtype=int)
         self._crystall_colors = np.zeros((self._ecal._n_patches,4))
         self._crystall_colors[:,0] = 1
         for n_particle in range(len(self._particles_manager._df)):
             self._crystall_colors[:,3] = self._crystall_colors[:,3] + self._particles_manager.get_crystall_content(n_particle)
-            self._center_crystals[n_particle] = np.argmax(self._particles_manager.get_crystall_content(n_particle))
 
         noise_std=0.008
         noise_mean=0
@@ -39,12 +39,14 @@ class ECLWidget:
         
         self._energy_labels = []
         box_list = []
+        self.update_button = Button(description='Update!',disabled=False,tooltip='Update',icon='rotate-right')
         for i in range(self._particles_manager.n_particles):
             self._energy_labels.append(Text(description = "Gesamte Energie der ausgewählten Kristalle in GeV:", value = "0", disabled=True))
-            box_list.append(HBox([self._energy_labels[i]]))
+            box_list.append(HBox([self._energy_labels[i],self.update_button]))
         
         self._particle_selector = Accordion(children=box_list,  titles = [f"Teilchen {str(i)}" for i in list(range(self._particles_manager.n_particles))], )
-        self._particle_selector.observe(self.change_particle, names="selected_index")
+        self._particle_selector.observe(self.update, names="selected_index")
+        self.update_button.on_click(self.update)
         self._final_box = VBox(children=[self._particle_selector, self._out])
     
     def show(self) -> None:
@@ -60,22 +62,37 @@ class ECLWidget:
         self._crystall_artist.set_aa(True)
         self._crystall_artist.set_linewidth(1.4)
         self._crystall_artist.set_animated(True)
-        
-        self._blit_manager = BlitManager(self._fig.canvas, self._crystall_artist)
+
+        self.circle_collection = PatchCollection([])
+        self._circle_artist = self._ax.add_collection(self.circle_collection)
+        self._circle_artist.set_aa(True)
+        self._circle_artist.set_linewidth(2)
+        self._circle_artist.set_animated(True)
+
+        self._blit_manager = BlitManager(self._fig.canvas, self._crystall_artist, self._circle_artist)
 
         self._lasso = LassoSelector(self._ax, onselect = self.on_select)
         
         with self._out:
             plt.show()
         display(self._final_box)
-        self._sel_particle = 0
-        self.on_select()
+        self.update()
 
-    def change_particle(self, change) -> None:
+
+    def update(self, change=0) -> None:
         if self._particle_selector.selected_index is not None:
             self._sel_particle = self._particle_selector.selected_index
         else:
             self._sel_particle = None
+
+        if self._true_particles:
+            phi = self._particles_manager._df["phi"].to_numpy()[self._particles_manager.index]
+            theta = self._particles_manager._df["theta"].to_numpy()[self._particles_manager.index] 
+        else:
+            phi = self._particles_manager._df["tracker_phi"].to_numpy()[self._particles_manager.index]
+            theta = np.arcsin(self._particles_manager._df["tracker_pt"].to_numpy()/np.sqrt(self._particles_manager._df["pz"].to_numpy()**2+self._particles_manager._df["tracker_pt"].to_numpy()**2))[self._particles_manager.index]                    
+        self.circle_coordinates=self._ecal.get_cell_coordinates(theta,phi)
+
         self.on_select()
     
     def on_select(self, verts = None) -> None:
@@ -86,10 +103,15 @@ class ECLWidget:
             self._particles_manager.energy_measurement(self._sel_particle, energy)
             self._energy_labels[self._sel_particle].value = str(round(energy, 5))
 
+        if self._sel_particle is not None:
+            circle=Circle((self.circle_coordinates[0,self._sel_particle],self.circle_coordinates[1,self._sel_particle]),radius=50)
+            self._circle_artist.set_paths([circle])
+            self._circle_artist.set_facecolor([[0,0,0,0]])
+            self._circle_artist.set_edgecolor([[0,0,1,1]])
+
         edge_colors = np.clip(self._crystall_colors,0,1)
         for n in range(self._particles_manager.n_particles):
             edge_colors[self._selected_crystalls[n]] = [0,0,1,0.5] if n==self._sel_particle else [1,1,0,0.3]
-            edge_colors[self._center_crystals[n]] = [0,0,0,1] if n==self._sel_particle else edge_colors[self._center_crystals[n]]
         self._crystall_artist.set_edgecolors(edge_colors)
         self._blit_manager.update()
         if self._sel_particle is not None:
