@@ -90,7 +90,7 @@ class ECLWidget:
             theta = self._particles_manager._df["theta"].to_numpy()[self._particles_manager.index] 
         else:
             phi = self._particles_manager._df["tracker_phi"].to_numpy()[self._particles_manager.index]
-            theta = np.arcsin(self._particles_manager._df["tracker_pt"].to_numpy()/np.sqrt(self._particles_manager._df["pz"].to_numpy()**2+self._particles_manager._df["tracker_pt"].to_numpy()**2))[self._particles_manager.index]                    
+            theta = np.arctan2(self._particles_manager._df["tracker_pt"].to_numpy(),self._particles_manager._df["pz"].to_numpy())[self._particles_manager.index]                    
         self.circle_coordinates=self._ecal.get_cell_coordinates(theta,phi)
 
         self.on_select()

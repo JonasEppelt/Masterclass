@@ -14,7 +14,7 @@ class TrackingWidget:
     '''
     Widget displaying the tracker and manipulating it
     '''
-    def __init__(self, particles_manager: ParticlesManager, continuous_update = True, granularity = 100, **kwargs) -> None:
+    def __init__(self, particles_manager: ParticlesManager, continuous_update = True, granularity = 100,truthvalues=False, **kwargs) -> None:
         self._helper = None
         self._particles_manager = particles_manager
         self._granularity = granularity
@@ -33,14 +33,20 @@ class TrackingWidget:
         self._widget_df["phi_slider_widget"] = self.generate_widget_per_particle(FloatSlider,
             value = 0, min = -np.pi, max = np.pi, step = 0.01, description = "$\phi$", continuous_update = self._continuous_update)
         self._widget_df["phi_fineslider_widget"] = self.generate_widget_per_particle(FloatSlider,
-            value = 0, min = 0, max = 0.15, step = 0.001, description = "$\phi$ fein", continuous_update = self._continuous_update)
+            value = 0, min = -0.10, max = 0.10, step = 0.001, description = "$\phi$ fein", continuous_update = self._continuous_update)
         self._widget_df["charge_widget"] = self.generate_widget_per_particle(RadioButtons,
             options = ["positiv", "negativ"], description = "elektrische Ladung:")
 
-        for i in range(len(self._particles_manager)):
-            self._widget_df.loc[i, "pt_slider_widget"].value = self._particles_manager[i]["tracker_pt"]
-            self._widget_df.loc[i, "phi_slider_widget"].value = self._particles_manager[i]["tracker_phi"]
-            self._widget_df.loc[i, "charge_widget"].value = "positiv" if self._particles_manager[i]["tracker_charge"]==1 else "negativ"
+        if truthvalues:
+            for i in range(len(self._particles_manager)):
+                self._widget_df.loc[i, "pt_slider_widget"].value = self._particles_manager._df.loc[i,"pt"]
+                self._widget_df.loc[i, "phi_slider_widget"].value = self._particles_manager._df.loc[i,"phi"]
+                self._widget_df.loc[i, "charge_widget"].value = "positiv" if self._particles_manager._df.loc[i,"charge"]==1 else "negativ"
+        else:
+            for i in range(len(self._particles_manager)):
+                self._widget_df.loc[i, "pt_slider_widget"].value = self._particles_manager._df.loc[i,"tracker_pt"]
+                self._widget_df.loc[i, "phi_slider_widget"].value = self._particles_manager._df.loc[i,"tracker_phi"]
+                self._widget_df.loc[i, "charge_widget"].value = "positiv" if self._particles_manager._df.loc[i,"tracker_charge"]==1 else "negativ"
 
         for widget_column_name in ["pt_slider_widget", "pt_fineslider_widget", "phi_slider_widget", "phi_fineslider_widget", "charge_widget"]:
             self._widget_df.apply(lambda x: x[widget_column_name].observe(self.update, names = "value"), 1)
@@ -107,7 +113,7 @@ class TrackingWidget:
     def update(self, update):
         if self._current_particle_index != None:
             pt = self._widget_df.loc[self._current_particle_index, ["pt_slider_widget", "pt_fineslider_widget"]].apply(lambda x: x.value).sum()
-            phi = self._widget_df.loc[self._current_particle_index, ["phi_slider_widget", "phi_fineslider_widget"]].apply(lambda x: x.value).sum()
+            phi = np.clip(self._widget_df.loc[self._current_particle_index, ["phi_slider_widget", "phi_fineslider_widget"]].apply(lambda x: x.value).sum(),-np.pi,np.pi)
             charge = -1 if self._widget_df.loc[self._current_particle_index, "charge_widget"].value == "negativ" else 1
             self._particles_manager.tracker_measurement(index = self._current_particle_index, pt = pt, phi = phi, charge = charge)
         df = self._particles_manager._df
