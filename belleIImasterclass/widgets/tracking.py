@@ -1,4 +1,4 @@
-from ipywidgets import Label, FloatSlider, RadioButtons, Accordion, Output, Layout, HBox, VBox
+from ipywidgets import Label, FloatSlider, RadioButtons, Accordion, Output, Layout, HBox, VBox, Text
 import pandas as pd
 from belleIImasterclass.particlesmanager import ParticlesManager
 from belleIImasterclass.widgets.blitmanager import BlitManager
@@ -25,7 +25,8 @@ class TrackingWidget:
 
         self._widget_df = pd.DataFrame(index = np.arange(particles_manager.n_particles))
         self._continuous_update = continuous_update
-        self._widget_df["hits_counter_widget"] = self.generate_widget_per_particle(Label, value="0 hits & 0 misses")
+        self._widget_df["hits_counter_widget"] = self.generate_widget_per_particle(Text,
+            disabled = True, description = "hit counter:",placeholder = "")
         self._widget_df["pt_slider_widget"] = self.generate_widget_per_particle(FloatSlider, 
             value = 0, min = 0,  max = 5, step = 0.01, description = "$p_T$", continuous_update = self._continuous_update)
         self._widget_df["pt_fineslider_widget"] = self.generate_widget_per_particle(FloatSlider,
@@ -126,6 +127,8 @@ class TrackingWidget:
             arrow_segments = self._arrows[self._current_particle_index]
             segments = np.append(segments, [arrow_segments], axis = 0)
             colors = np.append(colors, ["green"])
+            hits,misses=self._tracker.get_hits_and_misses(df,self._current_particle_index)
+            self._widget_df.loc[self._current_particle_index,"hits_counter_widget"].value=str(hits)+" hits & "+str(misses)+" misses"
         self._selection_hit_collection.set_segments(segments)
         self._selection_hit_collection.set_colors(colors)
         self._selection_blitmanager.update()

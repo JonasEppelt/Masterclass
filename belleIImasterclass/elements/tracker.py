@@ -24,14 +24,16 @@ class Tracker:
         self._granularity = granularity
         self._n_segments = n_segments
         self._add_segments = add_segments
-        self._linewidth = linewidth
+        self._linewidth = linewidth        
         self._B_field = 0.5/self._n_layers if not B_field else B_field
         self._segment_df = pd.DataFrame(
             index = np.arange(0,self.n_seg_total, dtype = int),
-            columns = ["begin", "end","radius", "noiseflag"],
+            columns = ["begin", "end","radius", "noiseflag","hitflag"],
             dtype = float
             )
         
+        self._segment_df.hitflag = False
+
         segments_counter = 0
         for l in range(1,self._n_layers+1):
             len_segment = 2*np.pi/(self._n_segments+self._add_segments*l) # length of segment in layer l in rad
@@ -41,7 +43,7 @@ class Tracker:
                 self._segment_df.loc[segments_counter, "end"] = len_segment*(i+1)-0.1/(l+1)+offset
                 self._segment_df.loc[segments_counter, "radius"] = l
                 segments_counter += 1
-        
+
         theta = np.linspace(self._segment_df["begin"], self._segment_df["end"], self._granularity, dtype = float)
         self.tracker_lines = (self._segment_df["radius"].to_numpy()[None,None,:] * np.array([np.cos(theta),np.sin(theta)])).T
 
@@ -63,18 +65,26 @@ class Tracker:
         theta[mask1] -= 2*np.pi
 
         theta = np.append(theta,10*np.ones(len(mask0)-mask0.sum()))
+        if not selected:
+            self._segment_df.hitflag = self._segment_df.hitflag | (theta > self._segment_df.begin) & (theta < self._segment_df.end) & (self._segment_df.radius <= abs(2*particle_radius))
 
         if particle[f"{tracker_selected}charge"] == 0:
             return np.zeros(len(theta), dtype=int)
         else:
             return (theta > self._segment_df.begin) & (theta < self._segment_df.end) & (self._segment_df.radius <= abs(2*particle_radius))
 
-    def get_hit_segments(self, particles: ParticlesManager, particle_index: int = None, selected = True) -> Tuple[np.array, np.array]:
+    def get_hits_and_misses(self,particles_dataframe,particle_index): #compares hits of the true particles and hits of the simulated particles
+        particle=particles_dataframe.loc[particle_index,:]
+        hits=np.logical_and(self.get_hits(particle),(self._segment_df.hitflag | self._segment_df.noiseflag))
+        misses=np.logical_and(self.get_hits(particle),np.logical_not(self._segment_df.hitflag | self._segment_df.noiseflag))
+        return [hits.sum(),misses.sum()]
+
+    def get_hit_segments(self, particles_dataframe, particle_index: int = None, selected = True) -> Tuple[np.array, np.array]:
         hit_segments = np.empty((0,self._granularity, 2))
         colors = []
-        for i in range(len(particles)):
-            hits = self.get_hits(particles.loc[i,:], selected=selected)
-            hit_segments = np.append(hit_segments, self.tracker_lines[hits], axis = 0)
+        for i in range(len(particles_dataframe)):
+            hits = self.get_hits(particles_dataframe.loc[i,:], selected=selected)
+            hit_segments = np.append(hit_segments, self.tracker_lines[hits], axis = 0)            
             if(i == particle_index):
                 colors.extend(["blue"]*hits.sum())
             else:
