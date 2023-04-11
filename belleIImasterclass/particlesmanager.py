@@ -29,6 +29,10 @@ class ParticlesManager:
     def crystal_column_names(self):
         return [str(i) for i in range(0,8736)]
 
+    def get_measurements_csv(self):
+        self._df.to_csv(path_or_buf="Ergebnisse.csv",columns=["tracker_pt","tracker_phi","tracker_charge","ecl_energy","klm_detect"])
+        self.missing_df.to_csv(path_or_buf="fehlendes_Teilchen.csv",columns=["px","py","pz","p","energy","mass","charge"])
+
     def __getitem__(self,i) -> pd.Series:
         return self._df.loc[i,:]
     def __len__(self) -> int:
