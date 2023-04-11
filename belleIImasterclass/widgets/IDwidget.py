@@ -28,7 +28,7 @@ class IDWidget:
             self.py_cheat_mask = (abs(self.py - self.pm._df["py"].to_numpy()) < self.p_threshhold)
             self.energies_cheat_mask = (abs(self.energies - self.pm._df["energy"].to_numpy()) < self.e_threshhold)
             self.px[self.px_cheat_mask] =  self.pm._df.loc[self.px_cheat_mask,"px"].to_numpy()
-            self.px[self.px_cheat_mask] =  self.pm._df.loc[self.px_cheat_mask,"py"].to_numpy()
+            self.py[self.py_cheat_mask] =  self.pm._df.loc[self.py_cheat_mask,"py"].to_numpy()
             self.energies[self.energies_cheat_mask] = self.pm._df.loc[self.energies_cheat_mask,"energy"] 
 
         self.energies=self.energies[self.pm.index]
