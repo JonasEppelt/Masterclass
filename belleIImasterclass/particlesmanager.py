@@ -30,9 +30,33 @@ class ParticlesManager:
     def crystal_column_names(self):
         return [str(i) for i in range(0,8736)]
 
-    def get_measurements_csv(self):
-        self._df.to_csv(path_or_buf="Ergebnisse.csv",columns=["tracker_pt","tracker_phi","tracker_charge","ecl_energy","klm_detect"])
-        self.missing_df.to_csv(path_or_buf="fehlendes_Teilchen.csv",columns=["px","py","pz","p","energy","mass","charge"])
+    def save_measurements_as_csv(self):
+        
+        measurements=pd.DataFrame(index=self.index,columns=["pt","phi","pz","klm_detect","energy","charge","missing","mass"])
+
+        measurements.loc[self.index,"missing"]=False
+        measurements.loc[self.index,"pt"]=self._df["tracker_pt"]
+        measurements.loc[self.index,"phi"]=self._df["tracker_phi"]
+        measurements.loc[self.index,"pz"]=self._df["pz"]
+        measurements.loc[self.index,"klm_detect"]=self._df["klm_detect"]
+        measurements.loc[self.index,"mass"]=0
+        measurements.loc[self.index,"energy"]=self._df["ecl_energy"]
+        measurements.loc[self.index,"charge"]=self._df["tracker_charge"]
+
+        measurements.at[self.n_particles,"missing"]=True
+        measurements.at[self.n_particles,"pt"]=np.sqrt(self.missing_df.loc[0,"px"]**2+self.missing_df.loc[0,"py"]**2)
+        measurements.at[self.n_particles,"phi"]=np.arctan2(self.missing_df.loc[0,"py"],self.missing_df.loc[0,"px"])
+        measurements.at[self.n_particles,"pz"]=self.missing_df.loc[0,"pz"]
+        measurements.at[self.n_particles,"klm_detect"]=False
+        measurements.at[self.n_particles,"mass"]=self.missing_df.loc[0,"mass"]
+        measurements.at[self.n_particles,"energy"]=self.missing_df.loc[0,"energy"]
+        measurements.at[self.n_particles,"charge"]=self.missing_df.loc[0,"charge"]
+
+        measurements.to_csv(path_or_buf="Ergebnisse.csv")
+
+    def load_measurements_from_csv(self,path="Ergebnisse.csv"):
+        
+        measurements= pd.read_csv(path)
 
     def __getitem__(self,i) -> pd.Series:
         return self._df.loc[i,:]

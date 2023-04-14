@@ -10,3 +10,4 @@ src/__pycache*
 venv*
 *checkpoints*
 .virtual_documents*
+Ergebnisse.csv

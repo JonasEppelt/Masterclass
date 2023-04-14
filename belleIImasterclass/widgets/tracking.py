@@ -61,7 +61,7 @@ class TrackingWidget:
                 VBox([x["pt_slider_widget"], x["pt_fineslider_widget"], 
                     x["phi_slider_widget"], x["phi_fineslider_widget"], x["charge_widget"]]),1)           
         
-        self.particle_selector = Accordion(children=self._widget_df["widget_box"].to_list(), titles = [f"Teilchen {str(i)}" for i in list(range(self.n_particles))])
+        self.particle_selector = Accordion(children=self._widget_df["widget_box"].to_list(), titles =[f"Teilchen {str(i)}" for i in list(range(self.n_particles))])
         self.particle_selector.observe(self.change_particle, names = "selected_index")
         self._current_particle_index = 0
         
