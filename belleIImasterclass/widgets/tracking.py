@@ -14,7 +14,7 @@ class TrackingWidget:
     '''
     Widget displaying the tracker and manipulating it
     '''
-    def __init__(self, particles_manager: ParticlesManager, continuous_update = True, granularity = 100,truthvalues=False, **kwargs) -> None:
+    def __init__(self, particles_manager: ParticlesManager, continuous_update = True, granularity = 100,truthvalues=False,show_hitcounter=False, **kwargs) -> None:
         self._helper = None
         self._particles_manager = particles_manager
         self._granularity = granularity
@@ -52,9 +52,14 @@ class TrackingWidget:
         for widget_column_name in ["pt_slider_widget", "pt_fineslider_widget", "phi_slider_widget", "phi_fineslider_widget", "charge_widget"]:
             self._widget_df.apply(lambda x: x[widget_column_name].observe(self.update, names = "value"), 1)
 
-        self._widget_df["widget_box"] = self._widget_df.apply(lambda x: 
-            VBox([x["hits_counter_widget"], x["pt_slider_widget"], x["pt_fineslider_widget"], 
-                x["phi_slider_widget"], x["phi_fineslider_widget"], x["charge_widget"]]),1)
+        if show_hitcounter:
+            self._widget_df["widget_box"] = self._widget_df.apply(lambda x: 
+                VBox([x["hits_counter_widget"], x["pt_slider_widget"], x["pt_fineslider_widget"], 
+                    x["phi_slider_widget"], x["phi_fineslider_widget"], x["charge_widget"]]),1)
+        else:
+             self._widget_df["widget_box"] = self._widget_df.apply(lambda x: 
+                VBox([x["pt_slider_widget"], x["pt_fineslider_widget"], 
+                    x["phi_slider_widget"], x["phi_fineslider_widget"], x["charge_widget"]]),1)           
         
         self.particle_selector = Accordion(children=self._widget_df["widget_box"].to_list(), titles = [f"Teilchen {str(i)}" for i in list(range(self.n_particles))])
         self.particle_selector.observe(self.change_particle, names = "selected_index")

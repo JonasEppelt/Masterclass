@@ -73,7 +73,7 @@ class Tracker:
         else:
             return (theta > self._segment_df.begin) & (theta < self._segment_df.end) & (self._segment_df.radius <= abs(2*particle_radius))
 
-    def get_hits_and_misses(self,particles_dataframe,particle_index): #compares hits of the true particles and hits of the simulated particles
+    def get_hits_and_misses(self,particles_dataframe,particle_index): #compares hits of the true particles and hits of the simulated particles, not needed anymore
         particle=particles_dataframe.loc[particle_index,:]
         hits=np.logical_and(self.get_hits(particle),(self._segment_df.hitflag | self._segment_df.noiseflag))
         misses=np.logical_and(self.get_hits(particle),np.logical_not(self._segment_df.hitflag | self._segment_df.noiseflag))

@@ -16,7 +16,8 @@ class ParticlesManager:
         self._df["ecl_energy"] = 0
         self._df["klm_detect"] = False
         self._df["patches"] = [[]]*len(self._df)
-        self._df["colors"] = [np.array([])]*len(self._df)
+        self._df["patch_edgecolors"] = [np.array([])]*len(self._df)
+        self._df["patch_facecolors"] = [np.array([])]*len(self._df)
         self.missing_df=pd.DataFrame(data=[[0,0,0,0,0,0,0]],columns=["px","py","pz","p","energy","mass","charge"])
     
     @property
@@ -48,9 +49,11 @@ class ParticlesManager:
     def Klm_measurement(self, index, hit) -> None:
         self._df.at[index, "klm_detect"] = hit
 
-    def ecal_patches(self, index, patches, colors) -> None:
+    def ecal_patches(self, index, patches, facecolors, edgecolors) -> None:
         self._df.at[index,"patches"]=patches
-        self._df.at[index,"colors"] = colors
+        self._df.at[index,"patch_edgecolors"] = edgecolors
+        self._df.at[index,"patch_facecolors"] = facecolors
+        
 
     def missing_particle_measurement(self,px,py,pz,energy,mass,charge) -> None:
         self.missing_df.at[0,"px"]=px
