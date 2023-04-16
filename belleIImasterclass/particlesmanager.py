@@ -56,7 +56,21 @@ class ParticlesManager:
 
     def load_measurements_from_csv(self,path="Ergebnisse.csv"):
         
-        measurements= pd.read_csv(path)
+        measurements= pd.read_csv(path,index_col=0)
+
+        self._df["tracker_pt"]     = measurements.loc[self.index,"pt"]
+        self._df["tracker_phi"]    = measurements.loc[self.index,"phi"]
+        self._df["tracker_charge"] = measurements.loc[self.index,"charge"]
+        self._df["ecl_energy"]     = measurements.loc[self.index,"energy"]
+        self._df["klm_detect"]     = measurements.loc[self.index,"klm_detect"]
+
+        self.missing_df.at[0,"px"]     =measurements.loc[self.n_particles,"pt"]*np.cos(measurements.loc[self.n_particles,"phi"])
+        self.missing_df.at[0,"py"]     =measurements.loc[self.n_particles,"pt"]*np.sin(measurements.loc[self.n_particles,"phi"])
+        self.missing_df.at[0,"pz"]     =measurements.loc[self.n_particles,"pz"]
+        self.missing_df.at[0,"p"]      =np.sqrt(measurements.loc[self.n_particles,"pt"]**2+measurements.loc[self.n_particles,"pz"]**2)
+        self.missing_df.at[0,"energy"] =measurements.loc[self.n_particles,"energy"]
+        self.missing_df.at[0,"mass"]   =measurements.loc[self.n_particles,"mass"]
+        self.missing_df.at[0,"charge"] =measurements.loc[self.n_particles,"charge"]        
 
     def __getitem__(self,i) -> pd.Series:
         return self._df.loc[i,:]
