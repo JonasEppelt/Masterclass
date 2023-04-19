@@ -13,10 +13,11 @@ from belleIImasterclass.particlesmanager import ParticlesManager
 from belleIImasterclass.widgets.blitmanager import BlitManager
 
 class EnergyWidget():
-    def __init__(self,particles_manager: ParticlesManager,total_energy=10.58,true_particles=False):
+    def __init__(self,particles_manager: ParticlesManager,total_energy=10.58,true_particles=False,px_py_sliders=False):
         self._total_energy=total_energy #in GeV
         self.true_particles=true_particles
         self._particles_manager = particles_manager
+        self.px_py_sliders=px_py_sliders
         #für die Skalierung der Vektoren wird der größte Impuls als vergleich verwendet. Es wird der wahre Wert und nicht der Wert aus dem Tracker verwendet.
         #evtl wäre es besser den wert aus dem Tracker zu nehmen
         self.max_pt=np.amax(self._particles_manager._df.loc[:,"pt"])+0.0001
@@ -41,6 +42,7 @@ class EnergyWidget():
         dummyplots=[]
         for i in range(self._particles_manager.n_particles+1):
             dummyplot, = self.ax.plot([10000],[10000],color=self.colors[i] if i < self._particles_manager.n_particles else "red",label=("Teilchen "+str(i))if i < self._particles_manager.n_particles else "Dark Matter Teilchen")
+            #beim label könnte man noch zusätzliche teilcheninfos reinmachen evtl
             dummyplots.append(dummyplot)
         self.ax.legend(handles=dummyplots)
 
@@ -49,18 +51,33 @@ class EnergyWidget():
         self.bm = BlitManager(fig.canvas ,self.patchartist)
 
         #Anzeigen für das Dark matter Teilchen
+
         self.dark_matter_text=widgets.Text(description = "", value = "Dark Matter Teilchen:", disabled=True)
-        self.px_slider=widgets.FloatSlider( 0,min = -self.max_pt*1.25, max = self.max_pt*1.25, step = 0.01, description = "$p_x$:")
-        self.px_slider.observe(self.update, names = "value")
-        self.py_slider=widgets.FloatSlider( 0,min = -self.max_pt*1.25, max = self.max_pt*1.25, step = 0.01, description = "$p_y$:")
-        self.py_slider.observe(self.update, names = "value")
         self.E_slider=widgets.FloatSlider( 0,min = 0, max = 8, step = 0.01, description = "Energie:")
         self.E_slider.observe(self.update, names = "value")
         self.charge_button=widgets.RadioButtons(options=['positive Ladung', 'negative Ladung',"ungeladen"])
         self.charge_button.observe(self.update, names = "value")
         self.mass_text=widgets.Text(description = "Masse:", value = "0", disabled=True)
-        self.dark_matter_box=widgets.VBox(children=[self.dark_matter_text,self.px_slider,self.py_slider,self.E_slider,self.charge_button,self.mass_text])
-        self.dark_matter_box.layout = widgets.Layout(border='solid 1px black',padding='5px 5px 5px 5px',margin='3px 3px 3px 3px',width = "318px")  
+        if self.px_py_sliders:  #px und py slider und pt und phi anzeige
+            self.px_slider=widgets.FloatSlider( 0,min = -self.max_pt*1.25, max = self.max_pt*1.25, step = 0.01, description = "$p_x$:")
+            self.px_slider.observe(self.update, names = "value")
+            self.py_slider=widgets.FloatSlider( 0,min = -self.max_pt*1.25, max = self.max_pt*1.25, step = 0.01, description = "$p_y$:")
+            self.py_slider.observe(self.update, names = "value")
+            self.dm_pt_text=widgets.Text(description = "$p_t$", value = "0", disabled=True)
+            self.dm_phi_text=widgets.Text(description = "$phi$", value = "0", disabled=True)
+            self.dark_matter_box=widgets.VBox(children=[self.dark_matter_text,self.px_slider,self.py_slider,self.dm_pt_text,self.dm_phi_text,
+                                                        self.E_slider,self.mass_text,self.charge_button])
+            self.dark_matter_box.layout = widgets.Layout(border='solid 1px black',padding='5px 5px 5px 5px',margin='3px 3px 3px 3px',width = "318px")  
+        else:                   #pt und phi slider und px und py anzeige
+            self.pt_slider=widgets.FloatSlider( 0,min = 0, max = self.max_pt*1.25, step = 0.01, description = "$p_t$:")
+            self.pt_slider.observe(self.update, names = "value")
+            self.phi_slider=widgets.FloatSlider( 0,min = -np.pi, max = np.pi, step = 0.01, description = "$phi$:")
+            self.phi_slider.observe(self.update, names = "value")
+            self.dm_px_text=widgets.Text(description = "$p_x$", value = "0", disabled=True)
+            self.dm_py_text=widgets.Text(description = "$p_y$", value = "0", disabled=True)
+            self.dark_matter_box=widgets.VBox(children=[self.dark_matter_text,self.pt_slider,self.phi_slider,self.dm_px_text,self.dm_py_text,
+                                                        self.E_slider,self.mass_text,self.charge_button])
+            self.dark_matter_box.layout = widgets.Layout(border='solid 1px black',padding='5px 5px 5px 5px',margin='3px 3px 3px 3px',width = "318px")             
 
         #Anzeigen für das Gesamtsystem
         self.system_text=widgets.Text(description = "", value = "Gesamtsystem:", disabled=True)
@@ -120,9 +137,13 @@ class EnergyWidget():
         #Ladnung:    
         totalcharge+= 1*(self.charge_button.value=='positive Ladung')-1*(self.charge_button.value=='negative Ladung')
         #Impuls:
-        px=self.px_slider.value
+        if self.px_py_sliders:
+            px=self.px_slider.value
+            py=self.py_slider.value
+        else:
+            px=self.pt_slider.value*np.cos(self.phi_slider.value)
+            py=self.pt_slider.value*np.sin(self.phi_slider.value)
         totalpx += px
-        py=self.py_slider.value
         totalpy += py
         pz=-totalpz
         #Energie:    
@@ -131,10 +152,16 @@ class EnergyWidget():
         mass=np.sqrt(self.E_slider.value**2 - (px**2+py**2+pz**2))  if self.E_slider.value**2 > (px**2+py**2+pz**2) else None
         #Pfeil und Balken:
         bars.append(Rectangle(xy=(-self.max_pt*1.6,(totalenergy-self.E_slider.value)*(2.3*self.max_pt/self._total_energy)-self.max_pt*1.15),width=self.max_pt*0.1,height=self.E_slider.value*(2.3*self.max_pt/self._total_energy)))      
-        arrows.append(FancyArrow(0,0,px,py,width=0.05))
+        arrows.append(FancyArrow(0,0,px,py,width=0.07))
         colors.append("red")
 
         #Textanzeigen:
+        if self.px_py_sliders:
+            self.dm_pt_text.value=str(np.round(np.sqrt(self.px_slider.value**2+self.py_slider.value**2),2))
+            self.dm_phi_text.value=str(np.round(np.arctan2(self.py_slider.value,self.px_slider.value),2))
+        else:
+            self.dm_px_text.value=str(np.round(self.pt_slider.value*np.cos(self.phi_slider.value),2))
+            self.dm_py_text.value=str(np.round(self.pt_slider.value*np.sin(self.phi_slider.value),2))
         self.pt_text.value=str(np.round(np.sqrt(totalpx**2+totalpy**2),2))
         self.px_text.value=str(np.round(totalpx,2))
         self.py_text.value=str(np.round(totalpy,2))
