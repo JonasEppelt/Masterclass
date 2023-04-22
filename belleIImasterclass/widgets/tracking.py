@@ -34,7 +34,7 @@ class TrackingWidget:
         self._widget_df["phi_slider_widget"] = self.generate_widget_per_particle(FloatSlider,
             value = 0, min = -np.pi, max = np.pi, step = 0.01, description = "$\phi$", continuous_update = self._continuous_update)
         self._widget_df["phi_fineslider_widget"] = self.generate_widget_per_particle(FloatSlider,
-            value = 0, min = -0.10, max = 0.10, step = 0.001, description = "$\phi$ fein", continuous_update = self._continuous_update)
+            value = 0, min = -0.10, max = 0.10, step = 0.001, description = "$\phi$, fein", continuous_update = self._continuous_update)
         self._widget_df["charge_widget"] = self.generate_widget_per_particle(RadioButtons,
             options = ["positiv", "negativ"], description = "elektrische Ladung:")
 
@@ -70,15 +70,15 @@ class TrackingWidget:
         particle_box = HBox(children=[self.particle_selector])
         particle_box.layout = Layout(
                                 border='solid 1px black',
-                                margin='0px 10px 10px 0px',
+                                margin='3px 3px 3px 3px',
                                 padding='5px 5px 5px 5px',
                                 height = "750px ",
-                                width = "500px"
+                                width = "355px"
                             )
         plot_box = HBox([self._out])
         plot_box.layout = Layout(
                                 border='solid 1px black',
-                                margin='0px 10px 10px 0px',
+                                margin='3px 3px 3px 3px',
                                 padding='5px 5px 5px 5px',
                                 height = "750px ",
                                 width = "750px"

@@ -51,7 +51,6 @@ class EnergyWidget():
         self.bm = BlitManager(fig.canvas ,self.patchartist)
 
         #Anzeigen für das Dark matter Teilchen
-
         self.dark_matter_text=widgets.Text(description = "", value = "Dark Matter Teilchen:", disabled=True)
         self.E_slider=widgets.FloatSlider( 0,min = 0, max = 8, step = 0.01, description = "Energie:")
         self.E_slider.observe(self.update, names = "value")
@@ -129,7 +128,8 @@ class EnergyWidget():
             energy=self._particles_manager._df.loc[index,"energy"] if self.true_particles else self._particles_manager._df.loc[index,"ecl_energy"]
             totalenergy+=energy
             #Pfeile und Balken:
-            bars.append(Rectangle(xy=(-self.max_pt*1.6,(totalenergy-energy)*(2.3*self.max_pt/self._total_energy)-self.max_pt*1.15),width=self.max_pt*0.1,height=energy*(2.3*self.max_pt/self._total_energy)))
+            bars.append(Rectangle(xy=(-self.max_pt*1.6,(totalenergy-energy)*(2.3*self.max_pt/self._total_energy)-self.max_pt*1.15),
+                                  width=self.max_pt*0.1,height=energy*(2.3*self.max_pt/self._total_energy)))
             colors.append(self.colors[index])       
             arrows.append(FancyArrow(0,0,px,py,width=0.07))
 
@@ -149,9 +149,10 @@ class EnergyWidget():
         #Energie:    
         totalenergy+=self.E_slider.value
         #Masse aus Energie und Impuls:
-        mass=np.sqrt(self.E_slider.value**2 - (px**2+py**2+pz**2))  if self.E_slider.value**2 > (px**2+py**2+pz**2) else None
+        mass=np.sqrt(self.E_slider.value**2 - (px**2+py**2+pz**2))  if self.E_slider.value**2 >= (px**2+py**2+pz**2) else None
         #Pfeil und Balken:
-        bars.append(Rectangle(xy=(-self.max_pt*1.6,(totalenergy-self.E_slider.value)*(2.3*self.max_pt/self._total_energy)-self.max_pt*1.15),width=self.max_pt*0.1,height=self.E_slider.value*(2.3*self.max_pt/self._total_energy)))      
+        bars.append(Rectangle(xy=(-self.max_pt*1.6,(totalenergy-self.E_slider.value)*(2.3*self.max_pt/self._total_energy)-self.max_pt*1.15),
+                              width=self.max_pt*0.1,height=self.E_slider.value*(2.3*self.max_pt/self._total_energy)))      
         arrows.append(FancyArrow(0,0,px,py,width=0.07))
         colors.append("red")
 
@@ -169,7 +170,7 @@ class EnergyWidget():
         self.energy_text.value=str(np.round(totalenergy,2))+"GeV"
         self.charge_text.value=str(totalcharge)
         #Werte merken:
-        self._particles_manager.missing_particle_measurement(px,py,pz if (abs(totalpx)+abs(totalpy))<0.1 else 0,self.E_slider.value,mass if mass is not None else 0,1*(self.charge_button.value=='positive Ladung')-1*(self.charge_button.value=='negative Ladung'))
+        self._particles_manager.missing_particle_measurement(0,px,py,pz if np.sqrt(totalpx**2+totalpy**2)<0.1 else 0,self.E_slider.value,mass if mass is not None else 0,1*(self.charge_button.value=='positive Ladung')-1*(self.charge_button.value=='negative Ladung'))
         #Zeichnen:
         self.patchartist.set_paths(arrows+bars)
         self.patchartist.set_color(colors+colors)
