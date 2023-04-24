@@ -13,7 +13,12 @@ class ParticlesManager:
         self._path = path
         self._df = pd.read_hdf(path)
         self.total_n_particles=len(self._df)
-        self._df["charge"] = np.sign(self._df["pdg"]) * (-1)
+        self._df["charge"] = 0# * (-1)
+        for i in range(len(self._df)):
+            if self._df.loc[i,"pdg"]!=22 and self._df.loc[i,"pdg"]!=111: #gamma's und pi0's haben Ladung 0
+                self._df.at[i,"charge"]=np.sign(self._df.loc[i,"pdg"])
+            else:
+                self._df.at[i,"charge"]=0
         self._df["tracker_pt"] = 0
         self._df["tracker_phi"] = 0
         self._df["tracker_charge"] = 0
