@@ -119,7 +119,7 @@ class ParticlesManager:
 
     def missing_particle_measurement(self,index,px,py,pz,energy,mass,charge) -> None:
         if len(self.dark_matter_df) <= index:
-            self.dark_matter_df.loc[index]<=["0"]*len(self.dark_matter_df.columns)
+            self.dark_matter_df.loc[index]=["0"]*len(self.dark_matter_df.columns)
         self.dark_matter_df.at[index,"ew_px"]=px
         self.dark_matter_df.at[index,"ew_py"]=py
         self.dark_matter_df.at[index,"ew_pz"]=pz
