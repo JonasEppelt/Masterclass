@@ -90,7 +90,8 @@ class ECLWidget:
             theta = self._particles_manager._df["theta"].to_numpy()[self._particles_manager.index] 
         else:
             phi = self._particles_manager._df["tracker_phi"].to_numpy()[self._particles_manager.index]
-            theta = np.arctan2(self._particles_manager._df["tracker_pt"].to_numpy(),self._particles_manager._df["pz"].to_numpy())[self._particles_manager.index]                    
+            theta = np.arctan2(self._particles_manager._df["tracker_pt"].to_numpy(),self._particles_manager._df["pz"].to_numpy())[self._particles_manager.index]
+
         self.circle_coordinates=self._ecal.get_cell_coordinates(theta,phi)
 
         self.on_select()
@@ -103,7 +104,7 @@ class ECLWidget:
             self._particles_manager.energy_measurement(self._sel_particle, energy)
             self._energy_labels[self._sel_particle].value = str(round(energy, 5))
 
-        if self._sel_particle is not None:
+        if (self._sel_particle is not None) and ((self._true_particles) or (self._particles_manager._df.loc[self._sel_particle,"tracker_pt"] != 0)):
             circle=Circle((self.circle_coordinates[0,self._sel_particle],self.circle_coordinates[1,self._sel_particle]),radius=50)
             self._circle_artist.set_paths([circle])
             self._circle_artist.set_facecolor([[0,0,0,0]])
@@ -142,11 +143,14 @@ class ECLWidget:
         path = Path(selection_corners.T)
         patchindices=np.nonzero(path.contains_points(self._ecal._patch_coordinates.T))[0]
         patches=[]
+        facecolors=np.clip(self._crystall_colors[patchindices],0,1)
+        edgecolors=np.clip(self._crystall_colors,0,1)
+        edgecolors[self._selected_crystalls[index]]=[0,0,1,0.5]
+        edgecolors=edgecolors[patchindices]
         for l in range(len(patchindices)):
             patches.append(Rectangle((self._ecal._patch_coordinates[:,patchindices[l]]+self._ecal._patch_offsets[:,patchindices[l]]-midpoint)*(50/(selection_size+2*rand)),
                                      width=self._ecal._crystal_size*(50/(selection_size+2*rand)),height=self._ecal._crystal_size*(50/(selection_size+2*rand)),
-                                     angle=self._ecal._patch_angles[patchindices[l]]*180/np.pi,linewidth=20))
-        colors=np.clip(self._crystall_colors[patchindices],0,1)
-        self._particles_manager.ecal_patches(index,patches,colors)
+                                     angle=self._ecal._patch_angles[patchindices[l]]*180/np.pi,linewidth=20,))
+        self._particles_manager.ecal_patches(index,patches,facecolors,edgecolors)
 
 

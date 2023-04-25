@@ -50,7 +50,7 @@ class Tracker:
     def get_hits(self, particle, selected=True):
         tracker_selected = "tracker_" if selected else ""
         particle_radius = (particle[f"{tracker_selected}pt"] /abs(self._B_field)).astype(float)
-        if particle_radius <= 0.0:
+        if particle_radius <= 0.0 or particle[f"{tracker_selected}charge"] == 0:
             return self._segment_df.radius != self._segment_df.radius
         relative_charge = particle[f"{tracker_selected}charge"]*(self._B_field/abs(self._B_field))
 
@@ -68,12 +68,9 @@ class Tracker:
         if not selected:
             self._segment_df.hitflag = self._segment_df.hitflag | (theta > self._segment_df.begin) & (theta < self._segment_df.end) & (self._segment_df.radius <= abs(2*particle_radius))
 
-        if particle[f"{tracker_selected}charge"] == 0:
-            return np.zeros(len(theta), dtype=int)
-        else:
-            return (theta > self._segment_df.begin) & (theta < self._segment_df.end) & (self._segment_df.radius <= abs(2*particle_radius))
+        return (theta > self._segment_df.begin) & (theta < self._segment_df.end) & (self._segment_df.radius <= abs(2*particle_radius))
 
-    def get_hits_and_misses(self,particles_dataframe,particle_index): #compares hits of the true particles and hits of the simulated particles
+    def get_hits_and_misses(self,particles_dataframe,particle_index): #compares hits of the true particles and hits of the simulated particles, not needed anymore
         particle=particles_dataframe.loc[particle_index,:]
         hits=np.logical_and(self.get_hits(particle),(self._segment_df.hitflag | self._segment_df.noiseflag))
         misses=np.logical_and(self.get_hits(particle),np.logical_not(self._segment_df.hitflag | self._segment_df.noiseflag))

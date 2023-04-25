@@ -17,8 +17,8 @@ class Tracks:
             track_trace_x = abs(self.track_radius)*np.sin(track_thetas) + self.track_center_x
             track_trace_y = abs(self.track_radius)*np.cos(track_thetas) + self.track_center_y
         else:
-            track_trace_x =  np.linspace(0, 1000*np.sin(self.phi), self._granularity)
-            track_trace_y = np.linspace(0,1000*np.cos(self._phi), self._granularity)
+            track_trace_x =  np.linspace(0, 200*np.sin(self.phi), self._granularity)
+            track_trace_y = np.linspace(0,200*np.cos(self._phi), self._granularity)
 
         return np.array([track_trace_x, track_trace_y])
 

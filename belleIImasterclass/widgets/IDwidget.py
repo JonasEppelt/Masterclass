@@ -39,7 +39,7 @@ class IDWidget:
         self.charge=self.charge[self.pm.index]
 
         for i in range(self.pm.n_particles):
-            self.patch_collections[i]=PatchCollection(self.pm._df.loc[i,"patches"],color=self.pm._df.loc[i,"colors"])  
+            self.patch_collections[i]=PatchCollection(self.pm._df.loc[i,"patches"],color=self.pm._df.loc[i,"patch_facecolors"])  
         self.impuls = np.sqrt(self.px**2 + self.py**2 + self.pz**2)
         self.masse = np.sqrt(abs(self.energies**2 - self.impuls**2))            
 
@@ -69,7 +69,8 @@ class IDWidget:
         self.ax.set_xlim(-28,28)
         self.ax.set_yticklabels([])
         self.ax.set_xticklabels([])
-        self.ax.add_collection(self.patch_collections[sele_index])
+        patchartist=self.ax.add_collection(self.patch_collections[sele_index])
+        patchartist.set_edgecolors(self.pm._df.loc[sele_index,"patch_edgecolors"])
 
     def show(self):
         boxes = []
@@ -108,8 +109,8 @@ class IDWidget:
             self.invmas_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
             self.E_p_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$E/p$", disabled = True))
             self.KL0_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "KLM", disabled = True))   
-            self.res_box = widgets.VBox(children=[self.label1, self.energy_txt[i], self.charge_txt[i], self.moment_txt[i], self.invmas_txt[i], self.E_p_txt[i],self.px_txt[i],self.py_txt[i],self.pz_txt[i],self.KL0_txt[i],self.update_button,self.out])
-            self.res_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "720px ",width = "370px")            
+            self.res_box = widgets.VBox(children=[widgets.HBox([self.label1,self.update_button]), self.energy_txt[i], self.charge_txt[i], self.moment_txt[i], self.invmas_txt[i], self.E_p_txt[i],self.px_txt[i],self.py_txt[i],self.pz_txt[i],self.KL0_txt[i],self.out])
+            self.res_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "705px ",width = "370px")            
 
             self.part_ids.append(widgets.Select(options = self.truth_particles.index, value = "e+", description = "Teilchen"))
             self.part_ids[i].observe(self.update, "value")
@@ -120,7 +121,7 @@ class IDWidget:
             self.sel_label.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", disabled = True))
             self.sel_image.append(widgets.Image(value=self.truth_particles.loc["e+", "Image"],format='png',width=320,height=320))
             self.sel_box = widgets.VBox(children=[self.label2, self.part_ids[i], self.sel_mass[i], self.sel_charge[i], self.sel_KL0[i],self.sel_E_p[i],self.sel_label[i],self.sel_image[i]])
-            self.sel_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "720px ",width = "370px")  
+            self.sel_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "705px ",width = "370px")  
 
             box = widgets.HBox(children=[self.res_box, self.sel_box])
             boxes.append(box)

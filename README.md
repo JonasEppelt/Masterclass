@@ -35,9 +35,10 @@ python3 -m pip install -e .
 
 ## Tracking widget
 
-Stellt ein Teilchen Tracker dar. Der Tracker ließt aus einem .h5 File die Daten über mehrere Teilchen aus. Im Tracker werden alle Segmente die die Teilchen überflogen haben rot gekennzeichnet, zusätzlich kommt noch Rauschen dazu. 
-Für jedes dieser Teilchen(truthparticles) kann man ein Teilchen simulieren und an die wahren Teilchen anpassen indem man den Impuls und Winkel des Teilchens variiert. An welches Teilchen man anpassen soll zeigt der Pfeil an. Wie gut die 
-Anpassung ist kann man aus der Anzeige "x hits & y misses" auslesen. Diese gibt an wie oft das simulierte Teilchen, die selben Segmente getroffen hat wie das wahre Teilchen, bzw. wie oft nicht. 
+TrackingWidget(particles_manager,...)
+
+Stellt ein Teilchen Tracker dar. Der Tracker ließt aus dem particles_manager die Daten über mehrere Teilchen aus. Im Tracker werden alle Segmente die die Teilchen überflogen haben rot gekennzeichnet, zusätzlich kommt noch Rauschen dazu. 
+Für jedes dieser Teilchen(truthparticles) kann man ein Teilchen simulieren und an die wahren Teilchen anpassen indem man den Impuls und Winkel des Teilchens variiert. An welches Teilchen man anpassen soll zeigt der Pfeil an.
 
 ### Funktionen:
 
@@ -46,35 +47,26 @@ Zeigt das tracking Widget an.
 
 ### Parameter zum Tracker:
 
-data_path(.h5): 
-Pfad für ein .h5 File die Teilchen und Information über deren Impuls, Masse, Energie und ... enthält. Siehe 2part_events für den Aufbau solch einer Datei.<br>
+particles_manager: 
+particles manager klasse, welche nötig ist um die events zu laden und die Ergebnisse fest zu halten.<br>
 
-B(=0.2,float): 
-B-feld Einstellung für den Tracker am besten zwischen 0.1 und 0.4<br>
+B(=None,float): 
+B-feld Einstellung für den Tracker, bei None wird das B-feld automatisch angepasst zu der Snzahl von layers gewählt.<br>
 
-layer(=15,int): 
+layer(=50,int): 
 Anzahl der Layers im Tracker. Umso mehr Layer man hat, umso besser kann man die Teilchen anpassen. Mehr als 60 wird unübersichtlich.<br>
 
 n_segments(=8,int): 
 Anzahl der Segmente im ersten layer.<br>
 
-ecl_segments(=30,int): 
-Anzahl der größeren ECL_segmente im letzten Layer.<br>
+add_segments(=3,int): 
+Gibt an, wieviel Segmente bei jedem Layer dazu kommen (layer i hat (n_segments+k*i) Segmente).<br>
 
-k(=3,int): 
-Gibt bei den normalen Segmenten an, wieviel Segmente bei jedem Layer dazu kommen (layer i hat (n_segments+k*i) Segmente).<br>
-
-dist(=0.1,float): 
-Gibt die Distanz zwischen den einzelnen Segmenten an.<br>
-
-noise(=0.1,float): 
+noise_ratio(=0.1,float): 
 Konstante für Noisefloor im Tracker, 0.1 bedeutet 10% Prozent aller Segmente werden fälschlicherweise Rot gekennzeichnet.<br>
 
-linewidth(=5,float): 
-Linienbreite, am besten bei 5 lassen.<br>
-
-show_truthbutton(=False,bool): 
-Mit dieser Funktion auf True wird im Widget ein Button angezeigt mit dem man die Flugbahn des wahren Teilchen Anzeigen kann.<br>
+linewidth(=2.5,float): 
+Linienbreite, am besten bei 2.5 lassen.<br>
 
 continuous_update(=True,bool): 
 Einstellung ob die Slider im Widget kontinuierlich ausgelesen werden oder nur zu gewissen Punkten. Nur auf False stellen, wenn es Performance Probleme gibt.<br>
@@ -82,19 +74,14 @@ Einstellung ob die Slider im Widget kontinuierlich ausgelesen werden oder nur zu
 truthvalues(=False,bool): 
 Wenn auf True werden direkt die richtigen Werte für Phi und impuls der simulierten Teilchen eingestellt.<br>
 
-ignore_noise(=False,bool): 
-Mit dieser Option auf True wird für die Anzeige x hit & y misses, das simulierte Teilchen NUR mit dem wahren Teilchen verglichen. Auf False werden auch das Rauschen und die anderen Teilchen beachtet.<br>
+granularity(=100,int):
+Sollte einfach auf 100 bleiben.
 
-trackercolor(="gray",string(color)): 
-Farbe des Trackers.<br>
-
-### propertys:
-
-get_fitted_particles:
-Returnt ein Dataframe mit Gesamtimpuls,phi,Ladung,Radius und der Impulskomponenten.
+show_hitcounter(=False,bool):
+Zeigt ein Hitcounter für die simulierten Teilchen an.
 
 ## ECL widget:
-Stellt ein Kaloriemeter dar. Ziel hier ist die Energie der einzelnen Teilchen herauszufinden. der ECL ließt aus dem selben .h5 file wie der Tracker die Information darüber, in welchem Segment wieviel Energie ist. In dem Widget
+Stellt ein Kaloriemeter dar. Ziel hier ist die Energie der einzelnen Teilchen herauszufinden. der ECL ließt aus dem selben particles manager wie der Tracker die Information darüber, in welchem Segment wieviel Energie ist. In dem Widget
 kann man dann jeweils die angezeigten Teilchen umkreisen(lasso selector) und deren Energie auslesen. 
 
 ### Funktionen:
@@ -104,22 +91,14 @@ Zeigt das ECL Widget an.
 
 ### Parameter zum Widget:
 
-data_path(.h5): 
-Pfad für ein .h5 File mit den Teilchen. <br>
+particles_manager: 
+particles manager klasse, welche nötig ist um die events zu laden und die Ergebnisse fest zu halten.<br>
 
-noise_rate(=0.05,float): 
+noise_rate(=0.2,float): 
 Konstante für den Noisefloor. <br>
 
-idx(=None,int or None): 
-hiermit kann man nur ein einzelnen Teilchen zeigen lassen, sollte normal auf None bleiben. <br>
-
-### propertys:
-
-get_particles_energy:
-Returnt ein Dataframe mit den Energien die man harausgefunden hat. <br>
-
-get_particles__radius:
-Returnt ein Dataframe mit den Radien der Teilchen. <br>
+true_particles:(=False,bool)
+... <br>
 
 ## Matching Widget
 Hier werden jetzt die gesammelten Ergebnisse aus dem Tracking_widget und ECL_widget dargestellt. Man kann vergleichen und nachvollziehen was für Teilchen man gefunden hat.
