@@ -1,51 +1,13 @@
-import basf2
-import b2luigi as luigi
-from b2luigi.basf2_helper import Basf2PathTask
-from ROOT import Belle2
-
-import os
-import numpy as np
-import pandas as pd
-from pandas import IndexSlice as idx
-
-from fourvector_generation import FourVecGenTask
-from events import events_dict, base_path
-
 try:
     from simulation import add_simulation
     from reconstruction import add_reconstruction
-    from mdst import add_mdst_output
 except ImportError:
     # Output expected ImportErrors.
     print("Import Error")
-import gc
-from pathlib import Path
 import basf2
 from ROOT import Belle2
-import pyarrow as pa
-import pyarrow.parquet as pq
 import pandas as pd
-import polars as pl
-import time
-import os, psutil
 import numpy as np
-import matplotlib.pyplot as plt
-import b2luigi as luigi
-
-crystal_column_names = [
-    "reconstructed_energy",
-    "reconstructed_time",
-    "psd",
-    "fit_type",
-    "chi2_0",
-    "mc_energy_c0",
-    "mc_energy_c1",
-    "mc_energy_bkg",
-    "c0_fraction",
-    "c1_fraction",
-    "bkg_fraction",
-
-    ]
 
 class ECLInfoExtractor(basf2.Module):
     def __init__(self):
@@ -79,7 +41,7 @@ class ECLInfoExtractor(basf2.Module):
                 df.loc[mc_particle_id, "mass"] = mc_particle.getMass()
                 df.loc[mc_particle_id, "charge"] = mc_particle.getCharge()
                 
-                df.loc[mc_particle_id, [str(i+1)  for i in range(8735)]] = np.zeros(8735)
+                df.loc[mc_particle_id, [str(i)  for i in range(8735+1)]] = np.zeros(8735+1)
             # get mc depositions
                 mc_relations = mc_particle.getRelationsWith("ECLCalDigits")
                 for mc_relations_id in range(mc_relations.size()):
