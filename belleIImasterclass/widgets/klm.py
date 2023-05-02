@@ -11,7 +11,7 @@ from matplotlib.collections import LineCollection
 from belleIImasterclass.elements.klm_detector import klm_detector
 from belleIImasterclass.particlesmanager import ParticlesManager
 from belleIImasterclass.widgets.blitmanager import BlitManager
-
+from matplotlib.patches import Circle
 
 
 class KLMWidget():
@@ -23,9 +23,10 @@ class KLMWidget():
         self.segmentwidth=4
         self.klmradius=19
         self.truepart=true_particles
+        self.magnetradius=17.5
         self.index=0
 
-        self.klm_detector=klm_detector(self._particles_manager,self.klmsegments,self.segmentwidth,self.klmradius,self.B,self.always_hit)
+        self.klm_detector=klm_detector(self._particles_manager,self.klmsegments,self.segmentwidth,self.klmradius,self.B,self.always_hit,magnetradius=self.magnetradius)
 
         self.klm_collection=self.klm_detector.make_klm_collection() 
         self.hit_collection=self.klm_detector.make_hit_collection()
@@ -56,6 +57,8 @@ class KLMWidget():
         ax.set_xlim(-28,28)
         self.lineartist = ax.add_collection(LineCollection([]))
         self.lineartist.set_animated(True)
+        ax.add_patch(Circle((0,0),self.magnetradius+0.8,facecolor="gray",edgecolor="black",hatch="\\\\////"))
+        ax.add_patch(Circle((0,0),self.magnetradius-0.8,facecolor="white",edgecolor="black"))
         ax.add_collection(self.tracker_collection)
         ax.add_collection(self.ecl_collection)
         ax.add_collection(self.klm_collection)
