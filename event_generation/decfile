@@ -1,6 +1,14 @@
 noPhotos
 Decay Upsilon(4S)
 1.0  pi0 e+ e- mu+ mu- PHSP;
+1.0  e+ e- PHSP;
+1.0  mu+ mu- PHSP;
+1.0  gamma gamma e+ e- PHSP;
+1.0  nu_e e+ e- PHSP;
+1.0  nu_mu mu+ mu- PHSP;
+1.0  pi+ pi- PHSP;
+1.0  pi0 e+ e- PHSP;
+1.0  gamma mu+ mu- PHSP;
 Enddecay
 
 End

@@ -57,7 +57,7 @@ class ECLInfoExtractor(basf2.Module):
 if __name__ == "__main__":
     main = basf2.create_path()
     main.add_module('EventInfoSetter',
-            evtNumList=100)
+            evtNumList=10)
     
     decfile = basf2.find_file('./decfile')
     main.add_module('EvtGenInput', userDECFile=decfile)
