@@ -11,7 +11,7 @@ class ParticlesManager:
         #alle sichtbaren sind im _df
         #immer die ersten die ersten Teicleh aus dem h5 file sind die dark_matter teichen        
         self._path = path
-        self._df = pd.read_hdf(path)
+        self._df = pd.read_csv(path)
         self.total_n_particles=len(self._df)
         self._df["charge"] = 0# * (-1)
         for i in range(len(self._df)):

@@ -12,11 +12,12 @@ from matplotlib.collections import LineCollection
 from belleIImasterclass.particlesmanager import ParticlesManager
 from belleIImasterclass.widgets.blitmanager import BlitManager
 from copy import deepcopy
-from matplotlib.collections import LineCollection
+from matplotlib.collections import LineCollection,PatchCollection
+from matplotlib.patches import Circle
 
 
 class klm_detector():
-    def __init__(self,particles_manager: ParticlesManager,klmsegments,segmentwidth,klmradius,B,always_hit=False,trackerlayers=15,eclradius=16,magnetradius=17.5):
+    def __init__(self,particles_manager: ParticlesManager,klmsegments,segmentwidth,klmradius,B,always_hit=False,trackerlayers=15,eclradius=15.5,magnetradius=17.5):
         self._particles_manager = particles_manager
         self.klmsegments=klmsegments
         self.segmentwidth=segmentwidth
@@ -28,7 +29,11 @@ class klm_detector():
         self.B=B
 
     def make_ecl_collection(self):
-        ecl_collection=LineCollection([self.eclradius*np.array([np.cos(np.linspace(0,6.3)),np.sin(np.linspace(0,6.3))]).T], color = "red", linewidths = 5)
+        lines=[]
+        for i in range(70):
+            phi=np.linspace(np.pi/30*i+0.017,np.pi/30*(i+1)-0.017)
+            lines.append(self.eclradius*np.array([np.cos(phi),np.sin(phi)]).T)
+        ecl_collection=LineCollection(lines, color = "gray", linewidths = 8)
         return ecl_collection
 
     def make_tracker_collection(self):    
@@ -55,7 +60,7 @@ class klm_detector():
             points[np.arange(25,50)]=np.array([np.linspace(points[24,0],points[50,0],25),np.linspace(points[24,1],points[50,1],25)]).T
             points[np.arange(75,100)]=np.array([np.linspace(points[74,0],points[0,0],25),np.linspace(points[74,1],points[0,1],25)]).T
             self.segments_coords[i]=points
-        klm_collection=LineCollection(self.segments_coords, color = "blue", linewidths = 3.6)
+        klm_collection=LineCollection(self.segments_coords, color = "gray", linewidths = 3.6)
         return klm_collection
 
     def make_hit_collection(self): #make_klm_collection must be called befor calling make_hit_collection
