@@ -19,9 +19,9 @@ class TrackingWidget:
         self._particles_manager = particles_manager
         self._granularity = granularity
         self._tracker = Tracker(**kwargs, granularity=granularity)
-        self._arrows = []
-        for i in range(len(self._particles_manager)):
-            self._arrows.append(self.get_arrow(i))
+        #self._arrows = []
+        #for i in range(len(self._particles_manager)):
+        #    self._arrows.append(self.get_arrow(i))
 
         self._widget_df = pd.DataFrame(index = np.arange(particles_manager.n_particles))
         self._continuous_update = continuous_update
@@ -131,8 +131,8 @@ class TrackingWidget:
             trace_segments = trace.get_trace_array()
             segments = np.append(segments, [trace_segments.T], axis = 0)
             colors = np.append(colors, ["blue"])
-            arrow_segments = self._arrows[self._current_particle_index]
-            segments = np.append(segments, [arrow_segments], axis = 0)
+            #arrow_segments = self._arrows[self._current_particle_index]
+            #segments = np.append(segments, [arrow_segments], axis = 0)
             colors = np.append(colors, ["green"])
             hits,misses=self._tracker.get_hits_and_misses(df,self._current_particle_index)
             self._widget_df.loc[self._current_particle_index,"hits_counter_widget"].value=str(hits)+" hits & "+str(misses)+" misses"
