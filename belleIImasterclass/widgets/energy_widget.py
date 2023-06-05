@@ -22,7 +22,7 @@ class EnergyWidget():
         #evtl wäre es besser den wert aus dem Tracker zu nehmen
         self.max_pt=np.amax(self._particles_manager._df.loc[:,"pt"])+0.0001
         #Liste für die Farben der Teilchen, das Darkmatterteilchen ist immer Rot
-        self.colors=["green","blue","purple","magenta","darkslategray","darkorange"]
+        self.colors=["green", "blue", "purple", "magenta", "darkorange", "brown", "darkkhaki", "aqua", "navy", "teal", "orchid", "peru", "lawngreen", "slateblue", "crimson"] *10
         #zusatz skalierungsfaktor (noch nicht implementiert)
         self.scale_factor=1
 
@@ -40,10 +40,12 @@ class EnergyWidget():
 
         #dummy plots sind nötig um die Legende richtig zu machen
         dummyplots=[]
-        for i in range(self._particles_manager.n_particles+1):
-            dummyplot, = self.ax.plot([10000],[10000],color=self.colors[i] if i < self._particles_manager.n_particles else "red",label=("Teilchen "+str(i))if i < self._particles_manager.n_particles else "Dark Matter Teilchen")
+        for i in range(self._particles_manager.n_particles):
+            dummyplot, = self.ax.plot([10000],[10000],label=("Teilchen "+str(i)))
             #beim label könnte man noch zusätzliche teilcheninfos reinmachen evtl
             dummyplots.append(dummyplot)
+        dummyplot, = self.ax.plot([10000],[10000],label="Dark Matter Teilchen", color = "black")
+        dummyplots.append(dummyplot)
         self.ax.legend(handles=dummyplots)
 
         self.patchartist = self.ax.add_collection(PatchCollection([])) #artist für Energiesäule UND Pfeile
@@ -154,7 +156,7 @@ class EnergyWidget():
         bars.append(Rectangle(xy=(-self.max_pt*1.6,(totalenergy-self.E_slider.value)*(2.3*self.max_pt/self._total_energy)-self.max_pt*1.15),
                               width=self.max_pt*0.1,height=self.E_slider.value*(2.3*self.max_pt/self._total_energy)))      
         arrows.append(FancyArrow(0,0,px,py,width=0.07))
-        colors.append("red")
+        colors.append("black")
 
         #Textanzeigen:
         if self.px_py_sliders:
