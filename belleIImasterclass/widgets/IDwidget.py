@@ -141,8 +141,6 @@ class IDWidget:
                       [0.511, -1],
                       [105., +1],
                      [105., -1],
-                     [1776., +1],
-                     [1776., -1],
                      [938.3, +1],
                      [938.3, -1],
                      [939.6, 0],
@@ -152,7 +150,7 @@ class IDWidget:
                       [497.6, 0],
                      [493.7, +1],
                       [493.7, -1]]
-        true_particle_names = ["e+", "e-", "mu+", "mu-", "tau+", "tau-", "Proton", "Antiproton", "Neutron", "pi0", "pi+", "pi-", "K0", "K+", "K-"]
+        true_particle_names = ["e+", "e-", "mu+", "mu-", "Proton", "Antiproton", "Neutron", "pi0", "pi+", "pi-", "K0", "K+", "K-"]
         for n in range(len(true_particle_names)):
             file=open("Ecal_images/"+true_particle_names[n]+".png", "rb")
             true_particle_data[n].append(file.read())
