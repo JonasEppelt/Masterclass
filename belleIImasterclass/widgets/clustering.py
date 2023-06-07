@@ -13,7 +13,7 @@ from matplotlib.transforms import Affine2D
 from matplotlib.patches import Rectangle
 
 class ECLWidget:
-    def __init__(self,particles_manager: ParticlesManager, noise_ratio = 0.2, true_particles=False) -> None:
+    def __init__(self,particles_manager: ParticlesManager, noise_ratio = 0.5, true_particles=False) -> None:
         self._particles_manager = particles_manager
         self._noise_ratio = noise_ratio
         self._true_particles=true_particles

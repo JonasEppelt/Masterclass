@@ -14,7 +14,7 @@ class Tracker:
     n_layers: int = 50,
     n_segments: int = 8, 
     add_segments: int = 3, 
-    noise_ratio: float = 0.2, 
+    noise_ratio: float = 0.25, 
     granularity: int =100, 
     linewidth: float = 2.5,
     B_field: float = None,
