@@ -28,7 +28,7 @@ class TrackingWidget:
         self._widget_df["hits_counter_widget"] = self.generate_widget_per_particle(Text,
             disabled = True, description = "hit counter:",placeholder = "")
         self._widget_df["pt_slider_widget"] = self.generate_widget_per_particle(FloatSlider, 
-            value = 0, min = 0,  max = 5, step = 0.01, description = "$p_T$", continuous_update = self._continuous_update)
+            value = 0, min = 0,  max = 7, step = 0.01, description = "$p_T$", continuous_update = self._continuous_update)
         self._widget_df["pt_fineslider_widget"] = self.generate_widget_per_particle(FloatSlider,
             value = 0, min = 0, max = 0.5, step = 0.001, description = "$p_T$, fein", continuous_update = self._continuous_update)
         self._widget_df["phi_slider_widget"] = self.generate_widget_per_particle(FloatSlider,
