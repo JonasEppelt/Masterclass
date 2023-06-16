@@ -15,10 +15,10 @@ class ParticlesManager:
         self.total_n_particles=len(self._df)
         self._df["charge"] = 0# * (-1)
         for i in range(len(self._df)):
-            if self._df.loc[i,"pdg"]!=22 and self._df.loc[i,"pdg"]!=111: #gamma's und pi0's haben Ladung 0
-                self._df.at[i,"charge"]=np.sign(self._df.loc[i,"pdg"])
-            else:
+            if self._df.loc[i,"pdg"] in [2112, 22,130,310,311,12,14,16, 111]: # neutrals have no charge
                 self._df.at[i,"charge"]=0
+            else:
+                self._df.at[i,"charge"]=np.sign(self._df.loc[i,"pdg"])
         self._df["tracker_pt"] = 0
         self._df["tracker_phi"] = 0
         self._df["tracker_charge"] = 0
