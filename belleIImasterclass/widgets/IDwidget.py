@@ -49,21 +49,21 @@ class IDWidget:
         sele_index = self.tabs.selected_index
 
         self.sel_charge[sele_index].value = str(self.truth_particles.loc[self.part_ids[sele_index].value, "el. Ladung"])
-        self.sel_mass[sele_index].value = str(self.truth_particles.loc[self.part_ids[sele_index].value, "Masse"])
+        self.sel_mass[sele_index].value = str(round(self.truth_particles.loc[self.part_ids[sele_index].value, "Masse"],6))
         self.sel_image[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "Image"]
         self.sel_label[sele_index].value = "So sieht ein typisches "+self.part_ids[sele_index].value + " Teilchen im Ecal aus:"
         self.sel_KL0[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "K_L0"] + " im KLM Detektor"
         self.sel_E_p[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "E_p"]
 
         self.KL0_txt[sele_index].value = "Hit im KLM Detektor" if self.KLM_hits[sele_index] else "kein Hit im KLM Detektor"
-        self.energy_txt[sele_index].value = str(self.energies[sele_index])
-        self.charge_txt[sele_index].value = str(self.charge[sele_index])
-        self.moment_txt[sele_index].value = str(self.impuls[sele_index])
-        self.invmas_txt[sele_index].value = str(self.masse[sele_index])
-        self.E_p_txt[sele_index].value = str(self.energies[sele_index]/self.impuls[sele_index])
-        self.px_txt[sele_index].value = str(self.px[sele_index])
-        self.py_txt[sele_index].value = str(self.py[sele_index])
-        self.pz_txt[sele_index].value = str(self.pz[sele_index])
+        self.energy_txt[sele_index].value = str(round(self.energies[sele_index],6))
+        self.charge_txt[sele_index].value = str(round(self.charge[sele_index],6))
+        self.moment_txt[sele_index].value = str(round(self.impuls[sele_index],6))
+        self.invmas_txt[sele_index].value = str(round(self.masse[sele_index],6))
+        self.E_p_txt[sele_index].value = str(round(self.energies[sele_index]/self.impuls[sele_index],6))
+        self.px_txt[sele_index].value = str(round(self.px[sele_index],6))
+        self.py_txt[sele_index].value = str(round(self.py[sele_index],6))
+        self.pz_txt[sele_index].value = str(round(self.pz[sele_index],6))
         self.ax.cla()
         self.ax.set_ylim(-28,28)
         self.ax.set_xlim(-28,28)
