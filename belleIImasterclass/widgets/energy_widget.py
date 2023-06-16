@@ -20,7 +20,7 @@ class EnergyWidget():
         self.px_py_sliders=px_py_sliders
         #für die Skalierung der Vektoren wird der größte Impuls als vergleich verwendet. Es wird der wahre Wert und nicht der Wert aus dem Tracker verwendet.
         #evtl wäre es besser den wert aus dem Tracker zu nehmen
-        self.max_pt=np.amax(self._particles_manager._df.loc[:,"pt"])+0.0001
+        self.max_pt=11
         #Liste für die Farben der Teilchen, das Darkmatterteilchen ist immer Rot
         self.colors=["green", "blue", "purple", "magenta", "darkorange", "brown", "darkkhaki", "aqua", "navy", "teal", "orchid", "peru", "lawngreen", "slateblue", "crimson"] *10
         #zusatz skalierungsfaktor (noch nicht implementiert)
@@ -30,13 +30,13 @@ class EnergyWidget():
         self.out = widgets.Output()
         with self.out:
             fig, self.ax = plt.subplots(figsize=(7,7),constrained_layout=True)
-        self.ax.set_yticklabels([]) #Zahlen auf den Achsen wegmachen
-        self.ax.set_xticklabels([])
-        self.ax.set_ylim(-self.max_pt*1.4,self.max_pt*1.4) #Bereiche festlegen (asymetrisch wegen Energiebalken)
-        self.ax.set_xlim(-self.max_pt*1.8,self.max_pt*1.4) 
+        #self.ax.set_yticklabels([]) #Zahlen auf den Achsen wegmachen
+        #self.ax.set_xticklabels([])
+        self.ax.set_ylim(-self.max_pt,self.max_pt) #Bereiche festlegen (asymetrisch wegen Energiebalken)
+        self.ax.set_xlim(-self.max_pt,self.max_pt) 
         self.ax.scatter(0,0,s=320, marker='*',color="red") #Stern in der Mitte
-        self.ax.plot([-self.max_pt*1.7,-self.max_pt*1.4],[self.max_pt*1.16,self.max_pt*1.16],color="black") #oberer Balken der Energie Säule
-        self.ax.plot([-self.max_pt*1.7,-self.max_pt*1.4],[-self.max_pt*1.16,-self.max_pt*1.16],color="black") #unterer Balken der Energie Säule
+        self.ax.plot([-self._total_energy,-self.max_pt+3],[self._total_energy,self._total_energy],color="black") #oberer Balken der Energie Säule
+        self.ax.plot([-self._total_energy,-self.max_pt+3],[-self._total_energy,-self._total_energy],color="black") #unterer Balken der Energie Säule
 
         #dummy plots sind nötig um die Legende richtig zu machen
         dummyplots=[]
@@ -54,7 +54,7 @@ class EnergyWidget():
 
         #Anzeigen für das Dark matter Teilchen
         self.dark_matter_text=widgets.Text(description = "", value = "Dark Matter Teilchen:", disabled=True)
-        self.E_slider=widgets.FloatSlider( 0,min = 0, max = 8, step = 0.01, description = "Energie:")
+        self.E_slider=widgets.FloatSlider( 0,min = 0, max = 10.58, step = 0.01, description = "Energie:")
         self.E_slider.observe(self.update, names = "value")
         self.charge_button=widgets.RadioButtons(options=['positive Ladung', 'negative Ladung',"ungeladen"])
         self.charge_button.observe(self.update, names = "value")
@@ -130,8 +130,9 @@ class EnergyWidget():
             energy=self._particles_manager._df.loc[index,"energy"] if self.true_particles else self._particles_manager._df.loc[index,"ecl_energy"]
             totalenergy+=energy
             #Pfeile und Balken:
-            bars.append(Rectangle(xy=(-self.max_pt*1.6,(totalenergy-energy)*(2.3*self.max_pt/self._total_energy)-self.max_pt*1.15),
-                                  width=self.max_pt*0.1,height=energy*(2.3*self.max_pt/self._total_energy)))
+            
+            bars.append(Rectangle(xy=(-self._total_energy+0.5,2*totalenergy-2*energy-self._total_energy),
+                                  width=1.5,height=energy*2))
             colors.append(self.colors[index])       
             arrows.append(FancyArrow(0,0,px,py,width=0.07))
 
@@ -153,21 +154,22 @@ class EnergyWidget():
         #Masse aus Energie und Impuls:
         mass=np.sqrt(self.E_slider.value**2 - (px**2+py**2+pz**2))  if self.E_slider.value**2 >= (px**2+py**2+pz**2) else None
         #Pfeil und Balken:
-        bars.append(Rectangle(xy=(-self.max_pt*1.6,(totalenergy-self.E_slider.value)*(2.3*self.max_pt/self._total_energy)-self.max_pt*1.15),
-                              width=self.max_pt*0.1,height=self.E_slider.value*(2.3*self.max_pt/self._total_energy)))      
+        bars.append(Rectangle(xy=(-self._total_energy+0.5,2*totalenergy-2*self.E_slider.value-self._total_energy),
+                                  width=1.5,height=self.E_slider.value*2))
+        
         arrows.append(FancyArrow(0,0,px,py,width=0.07))
         colors.append("black")
 
         #Textanzeigen:
         if self.px_py_sliders:
-            self.dm_pt_text.value=str(np.round(np.sqrt(self.px_slider.value**2+self.py_slider.value**2),2))
+            self.dm_pt_text.value=str(np.round(np.sqrt(self.px_slider.value**2+self.py_slider.value**2),2))+"GeV"
             self.dm_phi_text.value=str(np.round(np.arctan2(self.py_slider.value,self.px_slider.value),2))
         else:
-            self.dm_px_text.value=str(np.round(self.pt_slider.value*np.cos(self.phi_slider.value),2))
-            self.dm_py_text.value=str(np.round(self.pt_slider.value*np.sin(self.phi_slider.value),2))
-        self.pt_text.value=str(np.round(np.sqrt(totalpx**2+totalpy**2),2))
-        self.px_text.value=str(np.round(totalpx,2))
-        self.py_text.value=str(np.round(totalpy,2))
+            self.dm_px_text.value=str(np.round(self.pt_slider.value*np.cos(self.phi_slider.value),2))+"GeV"
+            self.dm_py_text.value=str(np.round(self.pt_slider.value*np.sin(self.phi_slider.value),2))+"GeV"
+        self.pt_text.value=str(np.round(np.sqrt(totalpx**2+totalpy**2),2))+"GeV"
+        self.px_text.value=str(np.round(totalpx,2))+"GeV"
+        self.py_text.value=str(np.round(totalpy,2))+"GeV"
         self.mass_text.value=str(np.round(mass,2)) if mass is not None else "Fehler: Energie < Gesamtimpuls"
         self.energy_text.value=str(np.round(totalenergy,2))+"GeV"
         self.charge_text.value=str(totalcharge)
