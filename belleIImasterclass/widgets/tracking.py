@@ -86,7 +86,7 @@ class TrackingWidget:
                                 margin='3px 3px 3px 3px',
                                 padding='5px 5px 5px 5px',
                                 height = "100%",
-                                width = "75%"
+                                width = "80%"
                             )
         self.final_box = HBox([particle_box, plot_box])
 
@@ -99,7 +99,12 @@ class TrackingWidget:
 
     def show(self):        
         with self._out:
-            self._fig, ax = plt.subplots(figsize=(7.5,7.5), constrained_layout = True)
+            s = 8
+            self._fig, ax = plt.subplots(figsize=(s,s), constrained_layout = True)
+            self._fig.canvas.header_visible = False
+            self._fig.canvas.footer_visible = False
+            self._fig.canvas.resizable = False
+            self._fig.canvas.toolbar_visible = False
         limit = self._tracker.n_layers +3
         ax.set_xlim(-limit,limit)
         ax.set_ylim(-limit,limit)

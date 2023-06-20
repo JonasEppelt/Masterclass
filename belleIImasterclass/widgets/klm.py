@@ -51,6 +51,10 @@ class KLMWidget():
         self.out = widgets.Output()
         with self.out:
             fig, ax = plt.subplots(figsize=(7,7),constrained_layout=True)
+            fig.canvas.header_visible = False
+            fig.canvas.footer_visible = False
+            fig.canvas.resizable = False
+            fig.canvas.toolbar_visible = False
         ax.set_yticklabels([])
         ax.set_xticklabels([])
         ax.set_ylim(-28,28)
