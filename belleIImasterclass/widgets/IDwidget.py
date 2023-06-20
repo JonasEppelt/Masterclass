@@ -49,21 +49,21 @@ class IDWidget:
         sele_index = self.tabs.selected_index
 
         self.sel_charge[sele_index].value = str(self.truth_particles.loc[self.part_ids[sele_index].value, "el. Ladung"])
-        self.sel_mass[sele_index].value = str(round(self.truth_particles.loc[self.part_ids[sele_index].value, "Masse"],6))
+        self.sel_mass[sele_index].value = str(round(self.truth_particles.loc[self.part_ids[sele_index].value, "Masse"],6)) + "GeV"
         self.sel_image[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "Image"]
         self.sel_label[sele_index].value = "So sieht ein typisches "+self.part_ids[sele_index].value + " Teilchen im Ecal aus:"
         self.sel_KL0[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "K_L0"] + " im KLM Detektor"
         self.sel_E_p[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "E_p"]
 
         self.KL0_txt[sele_index].value = "Hit im KLM Detektor" if self.KLM_hits[sele_index] else "kein Hit im KLM Detektor"
-        self.energy_txt[sele_index].value = str(round(self.energies[sele_index],6))
-        self.charge_txt[sele_index].value = str(round(self.charge[sele_index],6))
-        self.moment_txt[sele_index].value = str(round(self.impuls[sele_index],6))
-        self.invmas_txt[sele_index].value = str(round(self.masse[sele_index],6))
+        self.energy_txt[sele_index].value = str(round(self.energies[sele_index],6)) + "GeV"
+        self.charge_txt[sele_index].value = str(round(self.charge[sele_index],6)) 
+        self.moment_txt[sele_index].value = str(round(self.impuls[sele_index],6))+ "GeV"
+        self.invmas_txt[sele_index].value = str(round(self.masse[sele_index],6))+ "GeV"
         self.E_p_txt[sele_index].value = str(round(self.energies[sele_index]/self.impuls[sele_index],6))
-        self.px_txt[sele_index].value = str(round(self.px[sele_index],6))
-        self.py_txt[sele_index].value = str(round(self.py[sele_index],6))
-        self.pz_txt[sele_index].value = str(round(self.pz[sele_index],6))
+        self.px_txt[sele_index].value = str(round(self.px[sele_index],6)) + "GeV"
+        self.py_txt[sele_index].value = str(round(self.py[sele_index],6)) + "GeV"
+        self.pz_txt[sele_index].value = str(round(self.pz[sele_index],6)) + "GeV"
         self.ax.cla()
         self.ax.set_ylim(-28,28)
         self.ax.set_xlim(-28,28)
@@ -118,7 +118,7 @@ class IDWidget:
             self.sel_charge.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "el. Ladung", disabled = True))
             self.sel_E_p.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$E/p$", disabled = True))
             self.sel_KL0.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "KLM", disabled = True))
-            self.sel_label.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", disabled = True))
+            self.sel_label.append(widgets.Label(value = "kein Teilchen ausgewählt", disabled = True))
             self.sel_image.append(widgets.Image(value=self.truth_particles.loc["e+", "Image"],format='png',width=320,height=320))
             self.sel_box = widgets.VBox(children=[self.label2, self.part_ids[i], self.sel_mass[i], self.sel_charge[i], self.sel_KL0[i],self.sel_E_p[i],self.sel_label[i],self.sel_image[i]])
             self.sel_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "705px ",width = "370px")  
@@ -154,7 +154,7 @@ class IDWidget:
         for n in range(len(true_particle_names)):
             file=open("Ecal_images/"+true_particle_names[n]+".png", "rb")
             true_particle_data[n].append(file.read())
-            if true_particle_names[n]=="mu-" or true_particle_names[n]=="mu+":
+            if "mu" in true_particle_names[n] or "K" in true_particle_names[n]:
                 true_particle_data[n].append("Hit")
             else:
                 true_particle_data[n].append("kein Hit")

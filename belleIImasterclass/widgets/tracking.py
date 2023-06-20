@@ -67,23 +67,26 @@ class TrackingWidget:
         self.particle_selector.observe(self.change_particle, names = "selected_index")
         self._current_particle_index = 0
         
-        self._out = Output()
+        self._out = Output(layout = {
+                "width": "100%",
+                "height": "100%"
+        })
         
         particle_box = HBox(children=[self.particle_selector])
         particle_box.layout = Layout(
                                 border='solid 1px black',
                                 margin='3px 3px 3px 3px',
                                 padding='5px 5px 5px 5px',
-                                height = "750px ",
-                                width = "355px"
+                                height = "100% ",
+                                width = "20%"
                             )
         plot_box = HBox([self._out])
         plot_box.layout = Layout(
                                 border='solid 1px black',
                                 margin='3px 3px 3px 3px',
                                 padding='5px 5px 5px 5px',
-                                height = "750px ",
-                                width = "750px"
+                                height = "100%",
+                                width = "75%"
                             )
         self.final_box = HBox([particle_box, plot_box])
 
@@ -96,7 +99,7 @@ class TrackingWidget:
 
     def show(self):        
         with self._out:
-            self._fig, ax = plt.subplots(figsize=(7,7), constrained_layout = True)
+            self._fig, ax = plt.subplots(figsize=(7.5,7.5), constrained_layout = True)
         limit = self._tracker.n_layers +3
         ax.set_xlim(-limit,limit)
         ax.set_ylim(-limit,limit)

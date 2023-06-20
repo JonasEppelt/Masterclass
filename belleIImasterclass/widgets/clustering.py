@@ -3,7 +3,7 @@ from matplotlib.widgets import LassoSelector
 from belleIImasterclass.particlesmanager import ParticlesManager
 from belleIImasterclass.elements.ecal import ECal
 from belleIImasterclass.widgets.blitmanager import BlitManager
-from ipywidgets import Output, Accordion, Text, HBox, VBox, Button
+from ipywidgets import Output, Accordion, Text, HBox, VBox, Button, Label
 import matplotlib.pyplot as plt
 import numpy as np
 from copy import deepcopy
@@ -11,6 +11,8 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Circle
 from matplotlib.transforms import Affine2D
 from matplotlib.patches import Rectangle
+from IPython.display import HTML, display
+
 
 class ECLWidget:
     def __init__(self,particles_manager: ParticlesManager, noise_ratio = 0.5, true_particles=False) -> None:
@@ -35,23 +37,26 @@ class ECLWidget:
         self._crystall_colors[:,3] = np.clip(1.5*np.sqrt(self._crystall_colors[:,3]),0,1)
         self._crystall_colors[np.where(self._crystall_colors[:,3]<=0.1),:]=[0,0,0,0.1]
 
-        self._out = Output()
+        self._out = Output(layout={"width":"90%"})
         
         self._energy_labels = []
         box_list = []
-        self.update_button = Button(description='Update!',disabled=False,tooltip='Update',icon='rotate-right')
+        self.update_button = Button(description='',disabled=False,tooltip='Update',icon='rotate-right', layout={"width":"10%"})
         for i in range(self._particles_manager.n_particles):
-            self._energy_labels.append(Text(description = "Gesamte Energie der ausgewählten Kristalle in GeV:", value = "0", disabled=True))
-            box_list.append(HBox([self._energy_labels[i],self.update_button]))
+            self._energy_labels.append(VBox(children=[
+                Label(value="ges. Energie der ausgewählten Kristalle:"),
+                Text(description = "", value = "GeV", disabled=True)]))
+            box_list.append(HBox([self._energy_labels[i], self.update_button]))
         
-        self._particle_selector = Accordion(children=box_list,  titles = [f"Teilchen {str(i)}" for i in list(range(self._particles_manager.n_particles))], )
+        self._particle_selector = Accordion(children=box_list,  titles = [f"Teilchen {str(i)}" for i in list(range(self._particles_manager.n_particles))], layout={"width":"20%"})
         self._particle_selector.observe(self.update, names="selected_index")
         self.update_button.on_click(self.update)
-        self._final_box = VBox(children=[self._particle_selector, self._out])
+        self._final_box = HBox(children=[self._particle_selector, self._out])
     
     def show(self) -> None:
         with self._out:
-            self._fig, self._ax = plt.subplots(figsize = (14, 14*60/89), constrained_layout = True)
+            s=12
+            self._fig, self._ax = plt.subplots(figsize = (s, s*60/89), constrained_layout = True)
         self._ax.set_xlim(-450, 450)
         self._ax.set_ylim(-280, 340)
         self._ax.set_yticklabels([])
@@ -102,7 +107,7 @@ class ECLWidget:
             self._selected_crystalls[self._sel_particle] = np.nonzero(path.contains_points(self._ecal._patch_coordinates.T))[0]
             energy = np.sum(abs(self._crystall_content[self._selected_crystalls[self._sel_particle]]))
             self._particles_manager.energy_measurement(self._sel_particle, energy)
-            self._energy_labels[self._sel_particle].value = str(round(energy, 5))
+            self._energy_labels[self._sel_particle].children[1].value = str(round(energy, 5))+" GeV"
 
         if (self._sel_particle is not None) and ((self._true_particles) or (self._particles_manager._df.loc[self._sel_particle,"tracker_pt"] != 0)):
             circle=Circle((self.circle_coordinates[0,self._sel_particle],self.circle_coordinates[1,self._sel_particle]),radius=50)
