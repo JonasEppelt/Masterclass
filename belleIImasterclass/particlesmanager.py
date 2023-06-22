@@ -15,7 +15,7 @@ class ParticlesManager:
         self.total_n_particles=len(self._df)
         self._df["charge"] = 0# * (-1)
         for i in range(len(self._df)):
-            if self._df.loc[i,"pdg"] in [2112, 22,130,310,311,12,14,16, 111]: # neutrals have no charge
+            if self._df.loc[i,"pdg"] in [2112, 22,130,310,311,12,14,16, 111, 99999]: # neutrals have no charge
                 self._df.at[i,"charge"]=0
             else:
                 self._df.at[i,"charge"]=np.sign(self._df.loc[i,"pdg"])
@@ -28,10 +28,10 @@ class ParticlesManager:
         self._df["patches"] = [[]]*len(self._df)
         self._df["patch_edgecolors"] = [np.array([])]*len(self._df)
         self._df["patch_facecolors"] = [np.array([])]*len(self._df)
-
+        dm_mask = self._df["pdg"] == 99999
         self.dark_matter_df=self._df.copy(deep=True)   
-        self._df=self._df.drop(labels=np.arange(0,Dark_matter_particles),axis=0)
-        self.dark_matter_df=self.dark_matter_df.drop(labels=np.arange(Dark_matter_particles,self.total_n_particles),axis=0)
+        self._df=self._df.drop(labels=self._df[dm_mask].index,axis=0)
+        self.dark_matter_df=self.dark_matter_df.drop(labels=self._df[~dm_mask].index,axis=0)
 
         self.dark_matter_df=self.dark_matter_df.drop(labels=["tracker_pt","tracker_phi","tracker_charge","ecl_energy","ID_mass",
                                                              "klm_detect","patches","patch_edgecolors","patch_facecolors"],axis=1)
