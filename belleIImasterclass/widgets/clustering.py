@@ -85,14 +85,7 @@ class ECLWidget:
         else:
             self._sel_particle = None
 
-        if self._true_particles:
-            phi = self._particles_manager._df["phi"].to_numpy()[self._particles_manager.index]
-            theta = self._particles_manager._df["theta"].to_numpy()[self._particles_manager.index] 
-        else:
-            phi = self._particles_manager._df["tracker_phi"].to_numpy()[self._particles_manager.index]
-            theta = np.arctan2(self._particles_manager._df["tracker_pt"].to_numpy(),self._particles_manager._df["pz"].to_numpy())[self._particles_manager.index]
-
-        self.circle_coordinates=self._ecal.get_cell_coordinates(theta,phi)
+        self.intercept()
 
         self.on_select()
     
@@ -152,5 +145,70 @@ class ECLWidget:
                                      width=self._ecal._crystal_size*(50/(selection_size+2*rand)),height=self._ecal._crystal_size*(50/(selection_size+2*rand)),
                                      angle=self._ecal._patch_angles[patchindices[l]]*180/np.pi,linewidth=20,))
         self._particles_manager.ecal_patches(index,patches,facecolors,edgecolors)
+        
+    def intercept(self) -> None:
+        if self._true_particles:
+            px = self._particles_manager._df["px"].to_numpy()[self._particles_manager.index]
+            py = self._particles_manager._df["py"].to_numpy()[self._particles_manager.index]
+            pz = self._particles_manager._df["pz"].to_numpy()[self._particles_manager.index]
+            charge = self._particles_manager._df["charge"].to_numpy()[self._particles_manager.index]
+        else:
+            px = np.cos(self._particles_manager._df["tracker_phi"].to_numpy()[self._particles_manager.index])*self._particles_manager._df["tracker_pt"].to_numpy()[self._particles_manager.index]
+            py = np.sin(self._particles_manager._df["tracker_phi"].to_numpy()[self._particles_manager.index])*self._particles_manager._df["tracker_pt"].to_numpy()[self._particles_manager.index]
+            pz = self._particles_manager._df["pz"].to_numpy()[self._particles_manager.index]
+            charge = self._particles_manager._df["tracker_charge"].to_numpy()[self._particles_manager.index]
+        phi = []
+        theta = []
+        for i in range(len(px)):
+            trajectory = self.calculate_particle_trajectory(np.array([px[i], py[i], pz[i]]), charge[i], time_step=0.1, num_steps=1000)
+            intercept_point = self.calculate_intercept(trajectory)
+            phi.append(np.arctan2(intercept_point[1], intercept_point[0]))
+            theta.append(np.arctan2(np.sqrt(intercept_point[0]**2 + intercept_point[1]**2), intercept_point[2]))
+        
+        self.circle_coordinates=self._ecal.get_cell_coordinates(theta,phi)
+
+        
+    @staticmethod
+    def calculate_particle_trajectory(starting_momentum, particle_charge, time_step, num_steps, magnetic_field=np.array([0.0, 0.0, 1.5])):
+
+        # Initialize arrays to store position values
+        positions = np.zeros((num_steps, 3))
+        positions[0] = np.array([0, 0, 0])
+
+        # Initialize momentum and velocity arrays
+        momenta = np.zeros((num_steps, 3))
+        velocities = np.zeros((num_steps, 3))
+        momenta[0] = starting_momentum
+        velocities[0] = starting_momentum / np.linalg.norm(starting_momentum)
+        # Perform trajectory calculation
+        for i in range(1, num_steps):
+            # Calculate the Lorentz force
+            magnetic_force = particle_charge * np.cross(velocities[i - 1], magnetic_field)
+
+            # Update the momentum and velocity
+            momenta[i] = momenta[i - 1] + time_step * magnetic_force
+            velocities[i] = momenta[i] / np.linalg.norm(momenta[i])
+            positions[i] = positions[i - 1] + velocities[i - 1] * time_step
+
+        return positions
+    
+    @staticmethod
+    def calculate_intercept(trajectory, cylinder_radius=1.4016, cylinder_zplus=2.1213, cylinder_zminus=-1.1678):
+    # Start of trajectory
+        start_position = trajectory[0]
+
+        # Iterate over the positions along the trajectory
+        for i in range(1, len(trajectory)):
+            position = trajectory[i]
+
+            # Calculate the distance from the position to the start of the trajectory
+            distance = np.linalg.norm(position[:2] - start_position[:2])
+            # Check if the position lies within the cylinder
+            if (distance >= cylinder_radius) or (position[2] >= cylinder_zplus) or (position[2] <= cylinder_zminus):
+                return position
+
+        return [-1, -1, -1]
+
+        
 
 
