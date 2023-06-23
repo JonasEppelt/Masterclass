@@ -29,9 +29,15 @@ class EnergyWidget():
     def show(self):
         self.out = widgets.Output()
         with self.out:
-            fig, self.ax = plt.subplots(figsize=(7,7),constrained_layout=True)
-        #self.ax.set_yticklabels([]) #Zahlen auf den Achsen wegmachen
-        #self.ax.set_xticklabels([])
+            plt.ioff()
+            s = 7
+            fig, self.ax = plt.subplots(figsize=(s,s),constrained_layout=True)
+            fig.canvas.header_visible = False
+            fig.canvas.footer_visible = False
+            fig.canvas.resizable = False
+            fig.canvas.toolbar_visible = False
+        self.ax.set_yticklabels([]) #Zahlen auf den Achsen wegmachen
+        self.ax.set_xticklabels([])
         self.ax.set_ylim(-self.max_pt,self.max_pt) #Bereiche festlegen (asymetrisch wegen Energiebalken)
         self.ax.set_xlim(-self.max_pt,self.max_pt) 
         self.ax.scatter(0,0,s=320, marker='*',color="red") #Stern in der Mitte
@@ -91,7 +97,7 @@ class EnergyWidget():
         self.system_box.layout = widgets.Layout(border='solid 1px black',padding='5px 5px 5px 5px',margin='3px 3px 3px 3px',width = "318px")  
 
         #Updatebutton
-        self.update_button = widgets.Button(description='Update!',disabled=False,tooltip='Update',icon='rotate-right')
+        self.update_button = widgets.Button(description='',disabled=False,tooltip='Update',icon='rotate-right')
         self.update_button.layout = widgets.Layout(width = "318px",margin='3px 3px 3px 3px')  
         self.update_button.on_click(self.update)
         

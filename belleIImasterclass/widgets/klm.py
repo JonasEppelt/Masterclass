@@ -51,6 +51,10 @@ class KLMWidget():
         self.out = widgets.Output()
         with self.out:
             fig, ax = plt.subplots(figsize=(7,7),constrained_layout=True)
+            fig.canvas.header_visible = False
+            fig.canvas.footer_visible = False
+            fig.canvas.resizable = False
+            fig.canvas.toolbar_visible = False
         ax.set_yticklabels([])
         ax.set_xticklabels([])
         ax.set_ylim(-28,28)
@@ -69,20 +73,21 @@ class KLMWidget():
         self.tabs.observe(self.update, names = "selected_index")
         self.tickbox = []
         self.box_list = []
-        self.boxtext=widgets.Text(value = "Gibt es einen Treffer im KLM für dieses Teilchen?", disabled = True)
-        self.update_button = widgets.Button(description='Update!',disabled=False,tooltip='Update',icon='rotate-right')
+        self.boxtext=widgets.Label(value = "Gibt es einen Treffer im KLM für diese Spur?")
+        self.update_button = widgets.Button(description='',disabled=False,tooltip='Update',icon='rotate-right', layout={"width":"10%"})
         
         for i in range(self._particles_manager.n_particles): 
             self.tickbox.append(widgets.RadioButtons(options=['ja', 'nein']))
             self.tickbox[i].observe(self.update, names = "value")
-            self.box_list.append(widgets.HBox([self.boxtext,self.tickbox[i],self.update_button]))
+            self.box_list.append(widgets.VBox([self.update_button, self.boxtext,self.tickbox[i]]))
         self.tabs = widgets.Accordion(
             titles = [f"Teilchen {str(i)}" for i in range(self._particles_manager.n_particles)],
-            children=self.box_list)
+            children=self.box_list,
+            layout={"width":"25%"})
         
         self.tabs.observe(self.update, names = "selected_index")
         self.update_button.on_click(self.update)
-        self.final_box = widgets.VBox(children=[self.tabs, self.out])
+        self.final_box = widgets.HBox(children=[self.tabs, self.out])
         with self.out:
             plt.show()
         display(self.final_box)

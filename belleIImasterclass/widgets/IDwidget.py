@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.collections import PatchCollection
 from belleIImasterclass.particlesmanager import ParticlesManager
+from belleIImasterclass.widgets.blitmanager import BlitManager
 
 
 class IDWidget:
@@ -38,8 +39,6 @@ class IDWidget:
         self.KLM_hits=self.KLM_hits[self.pm.index]
         self.charge=self.charge[self.pm.index]
 
-        for i in range(self.pm.n_particles):
-            self.patch_collections[i]=PatchCollection(self.pm._df.loc[i,"patches"],color=self.pm._df.loc[i,"patch_facecolors"])  
         self.impuls = np.sqrt(self.px**2 + self.py**2 + self.pz**2)
         self.masse = np.sqrt(abs(self.energies**2 - self.impuls**2))            
 
@@ -47,30 +46,31 @@ class IDWidget:
     def update(self, change = 0):
         self.get_values()
         sele_index = self.tabs.selected_index
-
-        self.sel_charge[sele_index].value = str(self.truth_particles.loc[self.part_ids[sele_index].value, "el. Ladung"])
-        self.sel_mass[sele_index].value = str(round(self.truth_particles.loc[self.part_ids[sele_index].value, "Masse"],6))
-        self.sel_image[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "Image"]
-        self.sel_label[sele_index].value = "So sieht ein typisches "+self.part_ids[sele_index].value + " Teilchen im Ecal aus:"
-        self.sel_KL0[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "K_L0"] + " im KLM Detektor"
+        self.sel_charge[sele_index].value = str(self.truth_particles.loc[self.part_ids[sele_index].value, "charge"])
+        self.sel_mass[sele_index].value = str(round(self.truth_particles.loc[self.part_ids[sele_index].value, "mass"],6)) + "GeV"
+        self.sel_image[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "image"]
+        self.sel_label[sele_index].value = "So sieht ein typisches "+self.part_ids[sele_index].value + " im Ecal aus:"
+        self.sel_KL0[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "KLM"] + " im KLM Detektor"
         self.sel_E_p[sele_index].value = self.truth_particles.loc[self.part_ids[sele_index].value, "E_p"]
 
         self.KL0_txt[sele_index].value = "Hit im KLM Detektor" if self.KLM_hits[sele_index] else "kein Hit im KLM Detektor"
-        self.energy_txt[sele_index].value = str(round(self.energies[sele_index],6))
-        self.charge_txt[sele_index].value = str(round(self.charge[sele_index],6))
-        self.moment_txt[sele_index].value = str(round(self.impuls[sele_index],6))
-        self.invmas_txt[sele_index].value = str(round(self.masse[sele_index],6))
+        self.energy_txt[sele_index].value = str(round(self.energies[sele_index],6)) + "GeV"
+        self.charge_txt[sele_index].value = str(round(self.charge[sele_index],6)) 
+        self.moment_txt[sele_index].value = str(round(self.impuls[sele_index],6))+ "GeV"
+        self.invmas_txt[sele_index].value = str(round(self.masse[sele_index],6))+ "GeV"
         self.E_p_txt[sele_index].value = str(round(self.energies[sele_index]/self.impuls[sele_index],6))
-        self.px_txt[sele_index].value = str(round(self.px[sele_index],6))
-        self.py_txt[sele_index].value = str(round(self.py[sele_index],6))
-        self.pz_txt[sele_index].value = str(round(self.pz[sele_index],6))
+        self.px_txt[sele_index].value = str(round(self.px[sele_index],6)) + "GeV"
+        self.py_txt[sele_index].value = str(round(self.py[sele_index],6)) + "GeV"
+        self.pz_txt[sele_index].value = str(round(self.pz[sele_index],6)) + "GeV"
         self.ax.cla()
         self.ax.set_ylim(-28,28)
         self.ax.set_xlim(-28,28)
         self.ax.set_yticklabels([])
         self.ax.set_xticklabels([])
-        patchartist=self.ax.add_collection(self.patch_collections[sele_index])
-        patchartist.set_edgecolors(self.pm._df.loc[sele_index,"patch_edgecolors"])
+        self.patchartist.set_paths(self.pm._df.loc[sele_index,"patches"])
+        self.patchartist.set_edgecolors(self.pm._df.loc[sele_index,"patch_edgecolors"])
+        self.patchartist.set_facecolors(self.pm._df.loc[sele_index,"patch_facecolors"])  
+        self.blitmanager.update()
 
     def show(self):
         boxes = []
@@ -91,13 +91,20 @@ class IDWidget:
         self.sel_label=[]
         self.sel_image=[]
         self.out = widgets.Output()
+        
         with self.out:
             self.fig, self.ax = plt.subplots(figsize=(3.3,3.3),constrained_layout=True)
+            self.fig.canvas.header_visible = False
+            self.fig.canvas.footer_visible = False
+            self.fig.canvas.resizable = False
+            self.fig.canvas.toolbar_visible = False
+        self.patchartist=self.ax.add_collection(PatchCollection([]))
+        self.blitmanager = BlitManager(self.fig.canvas, self.patchartist)
         self.ax.set_ylim(-28,28)
         self.ax.set_xlim(-28,28)
-        self.label1=widgets.Text(value = "Resultate", disabled = True)
-        self.label2=widgets.Text(value = "Bekannte Teilchen zum Vergleichen", disabled = True)
-        self.update_button = widgets.Button(description='Update!',disabled=False,tooltip='Update',icon='rotate-right')
+        self.label1=widgets.Label(value = "Resultate", style = {"font_size": "25px"})
+        self.label2=widgets.Label(value = "Bekannte Teilchen zum Vergleichen", style = {"font_size": "25px"})
+        self.update_button = widgets.Button(description='',disabled=False,tooltip='Update',icon='rotate-right', layout = {"width": "10%"})
         
         for i in range(self.pm.n_particles):
             self.px_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$p_x$", disabled = True))
@@ -110,18 +117,18 @@ class IDWidget:
             self.E_p_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$E/p$", disabled = True))
             self.KL0_txt.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "KLM", disabled = True))   
             self.res_box = widgets.VBox(children=[widgets.HBox([self.label1,self.update_button]), self.energy_txt[i], self.charge_txt[i], self.moment_txt[i], self.invmas_txt[i], self.E_p_txt[i],self.px_txt[i],self.py_txt[i],self.pz_txt[i],self.KL0_txt[i],self.out])
-            self.res_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "705px ",width = "370px")            
+            self.res_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "100% ",width = "30%")            
 
-            self.part_ids.append(widgets.Select(options = self.truth_particles.index, value = "e+", description = "Teilchen"))
+            self.part_ids.append(widgets.Select(options = self.truth_particles.index, value = "Positron", description = "Teilchen"))
             self.part_ids[i].observe(self.update, "value")
             self.sel_mass.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "Masse", disabled = True))
             self.sel_charge.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "el. Ladung", disabled = True))
             self.sel_E_p.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "$E/p$", disabled = True))
             self.sel_KL0.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", description = "KLM", disabled = True))
-            self.sel_label.append(widgets.Text(placeholder = "kein Teilchen ausgewählt", disabled = True))
-            self.sel_image.append(widgets.Image(value=self.truth_particles.loc["e+", "Image"],format='png',width=320,height=320))
+            self.sel_label.append(widgets.Label(value = "kein Teilchen ausgewählt", disabled = True))
+            self.sel_image.append(widgets.Image(value=self.truth_particles.loc["Positron", "image"],format='png',width=320,height=320))
             self.sel_box = widgets.VBox(children=[self.label2, self.part_ids[i], self.sel_mass[i], self.sel_charge[i], self.sel_KL0[i],self.sel_E_p[i],self.sel_label[i],self.sel_image[i]])
-            self.sel_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "705px ",width = "370px")  
+            self.sel_box.layout = widgets.Layout(border='solid 1px black',margin='0px 10px 10px 0px',padding='5px 5px 5px 5px',height = "100% ",width = "30%")  
 
             box = widgets.HBox(children=[self.res_box, self.sel_box])
             boxes.append(box)
@@ -136,31 +143,16 @@ class IDWidget:
         display(self.tabs)
 
     def make_true_particle_data(self):
-
-        true_particle_data = [[0.511, 1],
-                      [0.511, -1],
-                      [105., +1],
-                     [105., -1],
-                     [938.3, +1],
-                     [938.3, -1],
-                     [939.6, 0],
-                      [135, 0],
-                     [139.6, +1],
-                      [139.6, -1],
-                      [497.6, 0],
-                     [493.7, +1],
-                      [493.7, -1]]
-        true_particle_names = ["e+", "e-", "mu+", "mu-", "Proton", "Antiproton", "Neutron", "pi0", "pi+", "pi-", "K0", "K+", "K-"]
-        for n in range(len(true_particle_names)):
-            file=open("Ecal_images/"+true_particle_names[n]+".png", "rb")
-            true_particle_data[n].append(file.read())
-            if true_particle_names[n]=="mu-" or true_particle_names[n]=="mu+":
-                true_particle_data[n].append("Hit")
-            else:
-                true_particle_data[n].append("kein Hit")
-            if true_particle_names[n]=="e+" or true_particle_names[n]=="e-":
-                true_particle_data[n].append("≈1")
-            else:
-                true_particle_data[n].append("≠1")    
-        self.truth_particles = pd.DataFrame(columns = ["Masse", "el. Ladung","Image","K_L0","E_p"], data=true_particle_data, index=true_particle_names)
-        self.truth_particles.loc[:, "Masse"] = self.truth_particles["Masse"]*10**(-3)
+        self.truth_particles = pd.DataFrame(
+            index = ["Elektron", "Positron", "Muon", "Anti-Muon",  "Pion", "Anti-Pion", "Photon"],
+            data = {"charge":[-1,1,-1,1,1,-1,0],
+             "mass": [0.511,0.511,105.65,105.65,139.57,139.57, 0],
+            "KLM": ["kein Hit","kein Hit","Hit","Hit","kein Hit","kein Hit","kein Hit"],
+            "E_p": ["≈1", "≈1", "≠1","≠1","≠1","≠1","≠1"],
+             "image": [None]*7
+            })
+        for n in self.truth_particles.index:
+            file=open("Ecal_images/"+n+".png", "rb")
+            self.truth_particles.loc[n, "image"] = file.read()
+            
+        self.truth_particles.loc[:, "mass"] = self.truth_particles["mass"]*10**(-3)
