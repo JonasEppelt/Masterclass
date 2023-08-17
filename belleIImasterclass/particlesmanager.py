@@ -1,17 +1,20 @@
 import pandas as pd
 import numpy as np
 from copy import deepcopy
+import os
+from pathlib import Path
 
 class ParticlesManager:
     '''
     class to manage particle measurements across multiple widgets
     '''
-    def __init__(self, path: str,Dark_matter_particles=0) -> None:
+    def __init__(self, path: str, event_number=0) -> None:
         #alle Darkmatterteilchen sind im darkmatter df
         #alle sichtbaren sind im _df
         #immer die ersten die ersten Teicleh aus dem h5 file sind die dark_matter teichen        
-        self._path = path
-        self._df = pd.read_csv(path)
+        files = sorted(os.listdir(path))
+        self._path = Path(path)/files[0]
+        self._df = pd.read_csv(self._path)
         self.total_n_particles=len(self._df)
         self._df["charge"] = 0# * (-1)
         for i in range(len(self._df)):
