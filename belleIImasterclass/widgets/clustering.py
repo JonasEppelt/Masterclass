@@ -12,6 +12,8 @@ from matplotlib.patches import Circle
 from matplotlib.transforms import Affine2D
 from matplotlib.patches import Rectangle
 from IPython.display import HTML, display
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class ECLWidget:
