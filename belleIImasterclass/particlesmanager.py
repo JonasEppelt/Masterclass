@@ -12,8 +12,8 @@ class ParticlesManager:
         #alle Darkmatterteilchen sind im darkmatter df
         #alle sichtbaren sind im _df
         #immer die ersten die ersten Teicleh aus dem h5 file sind die dark_matter teichen        
-        files = sorted(os.listdir(path))
-        self._path = Path(path)/files[0]
+        files = sorted([f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))])
+        self._path = Path(path)/files[event_number]
         self._df = pd.read_csv(self._path)
         self.total_n_particles=len(self._df)
         self._df["charge"] = 0# * (-1)
