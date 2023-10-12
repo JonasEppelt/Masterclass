@@ -14,7 +14,7 @@ class TrackingWidget:
     '''
     Widget displaying the tracker and manipulating it
     '''
-    def __init__(self, particles_manager: ParticlesManager, continuous_update = True, granularity = 100,truthvalues=False,show_hitcounter=False, **kwargs) -> None:
+    def __init__(self, particles_manager: ParticlesManager, continuous_update = True, granularity = 100,truthvalues=False, show_hitcounter=False, **kwargs) -> None:
         self._helper = None
         self._particles_manager = particles_manager
         self._granularity = granularity

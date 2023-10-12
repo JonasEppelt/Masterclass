@@ -11,9 +11,13 @@ class ParticlesManager:
     def __init__(self, path: str, event_number=0) -> None:
         #alle Darkmatterteilchen sind im darkmatter df
         #alle sichtbaren sind im _df
-        #immer die ersten die ersten Teicleh aus dem h5 file sind die dark_matter teichen        
-        files = sorted([f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))])
-        self._path = Path(path)/files[event_number]
+        
+        #immer die ersten die ersten Teicleh aus dem csv file sind die dark_matter teichen        
+        if ".csv" not in path:
+            files = sorted([f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))])
+            self._path = Path(path)/files[event_number]
+        else: 
+            self._path = Path(path)
         self._df = pd.read_csv(self._path)
         self.total_n_particles=len(self._df)
         self._df["charge"] = 0# * (-1)

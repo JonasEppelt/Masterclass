@@ -64,8 +64,8 @@ class ECLWidget:
             self._fig.canvas.resizable = False
         self._ax.set_xlim(-450, 450)
         self._ax.set_ylim(-280, 340)
-        self._ax.set_yticklabels([])
-        self._ax.set_xticklabels([])
+        #self._ax.set_yticklabels([])
+        #self._ax.set_xticklabels([])
 
         self._crystall_collection = PatchCollection(self._ecal.patches, color = self._crystall_colors)
         self._crystall_artist = self._ax.add_collection(self._crystall_collection)
@@ -96,7 +96,6 @@ class ECLWidget:
             self._sel_particle = None
 
         self.intercept()
-
         self.on_select()
     
     def on_select(self, verts = None) -> None:
@@ -106,7 +105,8 @@ class ECLWidget:
             energy = np.sum(abs(self._crystall_content[self._selected_crystalls[self._sel_particle]]))
             self._particles_manager.energy_measurement(self._sel_particle, energy)
             self._energy_labels[self._sel_particle].children[1].value = str(round(energy, 5))+" GeV"
-
+            
+        self._circle_artist.set_paths([])
         if (self._sel_particle is not None) and ((self._true_particles) or (self._particles_manager._df.loc[self._sel_particle,"tracker_pt"] != 0)):
             circle=Circle((self.circle_coordinates[0,self._sel_particle],self.circle_coordinates[1,self._sel_particle]),radius=50)
             self._circle_artist.set_paths([circle])
@@ -174,13 +174,14 @@ class ECLWidget:
             intercept_point = self.calculate_intercept(trajectory)
             phi.append(np.arctan2(intercept_point[1], intercept_point[0]))
             theta.append(np.arctan2(np.sqrt(intercept_point[0]**2 + intercept_point[1]**2), intercept_point[2]))
-        
+            
+            
         self.circle_coordinates=self._ecal.get_cell_coordinates(theta,phi)
+
 
         
     @staticmethod
     def calculate_particle_trajectory(starting_momentum, particle_charge, time_step, num_steps, magnetic_field=np.array([0.0, 0.0, 1.5])):
-
         # Initialize arrays to store position values
         positions = np.zeros((num_steps, 3))
         positions[0] = np.array([0, 0, 0])
@@ -203,7 +204,7 @@ class ECLWidget:
         return positions
     
     @staticmethod
-    def calculate_intercept(trajectory, cylinder_radius=1.4016, cylinder_zplus=2.1213, cylinder_zminus=-1.1678):
+    def calculate_intercept(trajectory, cylinder_radius=0.1416, cylinder_zplus=1.966, cylinder_zminus=-1.1025):
     # Start of trajectory
         start_position = trajectory[0]
 

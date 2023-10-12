@@ -8,7 +8,7 @@ from matplotlib.colors import to_rgba_array
 from matplotlib.patches import Rectangle
 
 class ECal:
-    def __init__(self, crystal_size = 4, linewidth = 1.75) -> None:
+    def __init__(self, crystal_size = 6, linewidth = 1.75) -> None:
         self._crystal_size = crystal_size
         self._linewidth = linewidth
 
@@ -93,7 +93,7 @@ class ECal:
                 id+=self._barrel_columns*self._barrel_rows
                 id+=self._backward_rings_sizes[np.arange(theta_id-self._barrel_rows-self._forward_number_of_rings)].sum()
                 id+=int(self._backward_rings_sizes[theta_id-self._barrel_rows-self._forward_number_of_rings]*_phi/(2*np.pi))
-
+            
             cell_ids.append(id)    
         return self._patch_coordinates[:,cell_ids]+self._patch_offsets[:,cell_ids]
     
