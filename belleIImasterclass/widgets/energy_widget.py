@@ -176,7 +176,7 @@ class EnergyWidget():
         self.pt_text.value=str(np.round(np.sqrt(totalpx**2+totalpy**2),2))+"GeV"
         self.px_text.value=str(np.round(totalpx,2))+"GeV"
         self.py_text.value=str(np.round(totalpy,2))+"GeV"
-        self.mass_text.value=str(np.round(mass,2)) if mass is not None else "Fehler: Energie < Gesamtimpuls"
+        self.mass_text.value=str(np.round(mass,2))+"GeV" if mass is not None else "Fehler: Energie < Gesamtimpuls"
         self.energy_text.value=str(np.round(totalenergy,2))+"GeV"
         self.charge_text.value=str(totalcharge)
         #Werte merken:
