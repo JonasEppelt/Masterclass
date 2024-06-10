@@ -1,3 +1,5 @@
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/JonasEppelt/Masterclass.git/splitting)
+
 # Belle II Masterclass
 
 by Jonas Eppelt, Filipp Gostner, Isabel Haide, Torben Ferber,
