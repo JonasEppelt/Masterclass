@@ -24,7 +24,7 @@ class ParticlesManager:
         for i in range(len(self._df)):
             if self._df.loc[i,"pdg"] in [2112, 22,130,310,311,12,14,16, 111, 99999]: # neutrals have no charge
                 self._df.at[i,"charge"]=0
-            elif self._df.loc[i,"pdg"] in [11, 13, 15]: # pdg codes for leptons are the other way around
+            elif abs(self._df.loc[i,"pdg"]) in [11, 13, 15]: # pdg codes for leptons are the other way around
                 self._df.at[i,"charge"]=np.sign(self._df.loc[i,"pdg"])*(-1)
             else:
                 self._df.at[i,"charge"]=np.sign(self._df.loc[i,"pdg"])
